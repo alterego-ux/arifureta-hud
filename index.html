@@ -1,0 +1,4221 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#050508">
+<meta name="description" content="Arifureta HUD — Sistema personal de enfoque, notas y metas. Forjado en el abismo.">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Arifureta HUD">
+<title>Arifureta HUD // Sistema Personal</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpolygon points='32,2 60,18 60,46 32,62 4,46 4,18' fill='%23050508' stroke='%2300e5ff' stroke-width='3'/%3E%3Cpath d='M20 44 L32 18 L44 44 M25 36 H39' stroke='%23e8e8f0' stroke-width='3' fill='none'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════════════════════════════════════════════
+   ARIFURETA HUD — Hoja de estilos
+   Paleta: negro absoluto, plata, púrpura, carmesí y cian HUD.
+   ══════════════════════════════════════════════════════════════ */
+
+:root{
+  --bg:#050508;
+  --bg-2:#08080f;
+  --panel:rgba(11,11,20,.82);
+  --panel-solid:#0b0b14;
+  --line:rgba(232,232,240,.13);
+  --line-strong:rgba(232,232,240,.28);
+  --plata:#e8e8f0;
+  --muted:#9393ad;
+  --purple:#7b2bff;
+  --purple-rgb:123,43,255;
+  --crimson:#c81e3c;
+  --crimson-rgb:200,30,60;
+  --cyan:#00e5ff;
+  --cyan-rgb:0,229,255;
+  --ok:#2fe6b4;
+  --font-display:'Orbitron',sans-serif;
+  --font-ui:'Rajdhani',sans-serif;
+  --font-body:'Inter',sans-serif;
+  --header-h:62px;
+  --nav-h:66px;
+  --clip-lg:polygon(18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 18px);
+  --clip-md:polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  --clip-sm:polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  --ease:cubic-bezier(.22,1,.36,1);
+  --glow-purple:0 0 24px rgba(123,43,255,.35);
+  --glow-cyan:0 0 22px rgba(0,229,255,.28);
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{
+  margin:0;
+  min-height:100vh;
+  background:var(--bg);
+  color:var(--plata);
+  font-family:var(--font-body);
+  font-size:14px;
+  line-height:1.5;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit}
+img{max-width:100%;display:block}
+::selection{background:rgba(123,43,255,.5);color:#fff}
+:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-track{background:#06060b}
+::-webkit-scrollbar-thumb{background:#23233a;border:2px solid #06060b}
+::-webkit-scrollbar-thumb:hover{background:var(--purple)}
+
+/* ── Capas de fondo: imagen, grid, scanlines y ruido ─────────── */
+.bg-fondo{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-size:cover;background-position:center;
+  opacity:.20;filter:saturate(.75) contrast(1.1);
+  transform:scale(1.04);
+}
+.bg-grid{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(232,232,240,.045) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(232,232,240,.045) 1px,transparent 1px);
+  background-size:52px 52px;
+  -webkit-mask-image:radial-gradient(ellipse at 50% 12%,#000 0%,transparent 78%);
+  mask-image:radial-gradient(ellipse at 50% 12%,#000 0%,transparent 78%);
+  opacity:.55;
+}
+.bg-scan{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:repeating-linear-gradient(180deg,rgba(232,232,240,.03) 0 1px,transparent 1px 4px);
+  opacity:.5;
+}
+.bg-scan::after{
+  content:'';position:absolute;left:0;right:0;top:-20%;height:18%;
+  background:linear-gradient(180deg,transparent,rgba(0,229,255,.045),transparent);
+  animation:barrido 9s linear infinite;
+}
+.bg-ruido{
+  position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.035;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+}
+@keyframes barrido{0%{transform:translateY(0)}100%{transform:translateY(760%)}}
+
+/* ── Tipografía base ─────────────────────────────────────────── */
+h1,h2,h3,h4,p{margin:0}
+.eyebrow{
+  font-family:var(--font-display);font-size:8.5px;font-weight:700;
+  letter-spacing:3.2px;text-transform:uppercase;color:var(--cyan);
+  opacity:.9;
+}
+.mono{font-family:var(--font-ui);font-variant-numeric:tabular-nums}
+.text-muted{color:var(--muted)}
+.text-cyan{color:var(--cyan)}
+.text-purple{color:var(--purple)}
+.text-crimson{color:var(--crimson)}
+
+/* ── Barra superior ──────────────────────────────────────────── */
+.topbar{
+  position:fixed;top:0;left:0;right:0;z-index:200;
+  height:calc(var(--header-h) + env(safe-area-inset-top));
+  padding:env(safe-area-inset-top) 12px 0;
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  background:rgba(5,5,8,.84);
+  -webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--line);
+}
+.topbar::after{
+  content:'';position:absolute;left:0;right:0;bottom:-1px;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(0,229,255,.55),rgba(123,43,255,.45),transparent);
+  opacity:.65;
+}
+.marca{display:flex;align-items:center;gap:9px;min-width:0}
+.logo{
+  width:34px;height:38px;flex:none;position:relative;display:grid;place-items:center;
+  clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);
+  background:linear-gradient(150deg,var(--purple),rgba(200,30,60,.75));
+  box-shadow:0 0 22px rgba(123,43,255,.5);
+}
+.logo::before{
+  content:'';position:absolute;inset:2px;clip-path:inherit;
+  background:linear-gradient(160deg,#101019,#050508);
+}
+.logo svg{position:relative;z-index:1;width:20px;height:20px;filter:drop-shadow(0 0 4px rgba(0,229,255,.7))}
+.marca__texto{min-width:0}
+.marca h1{
+  font-family:var(--font-display);font-size:12px;font-weight:900;
+  letter-spacing:1.6px;white-space:nowrap;line-height:1.2;
+}
+.marca h1 em{font-style:normal;color:var(--purple)}
+.marca p{
+  font-family:var(--font-ui);font-size:8px;font-weight:600;letter-spacing:2px;
+  color:var(--muted);text-transform:uppercase;white-space:nowrap;margin-top:1px;
+}
+.topbar__datos{display:flex;align-items:center;gap:8px;min-width:0}
+.reloj{text-align:right;line-height:1.1;min-width:64px}
+.reloj strong{
+  display:block;font-family:var(--font-ui);font-size:17px;font-weight:700;
+  letter-spacing:1.6px;color:var(--cyan);text-shadow:0 0 12px rgba(0,229,255,.4);
+  font-variant-numeric:tabular-nums;
+}
+.reloj span{
+  display:block;font-family:var(--font-ui);font-size:8px;font-weight:600;
+  letter-spacing:1.4px;text-transform:uppercase;color:var(--muted);margin-top:1px;
+}
+.racha-chip{
+  display:flex;align-items:center;gap:5px;height:32px;padding:0 8px;
+  border:1px solid rgba(200,30,60,.4);background:rgba(200,30,60,.09);
+  clip-path:var(--clip-sm);font-family:var(--font-ui);font-weight:700;
+  color:#ffd9df;font-size:12px;flex:none;
+}
+.racha-chip svg{width:14px;height:14px;color:var(--crimson);filter:drop-shadow(0 0 5px rgba(200,30,60,.7))}
+.racha-chip small{font-size:8px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;font-weight:600}
+.icon-btn{
+  width:34px;height:34px;flex:none;display:grid;place-items:center;
+  background:rgba(11,11,20,.8);border:1px solid var(--line);color:var(--muted);
+  cursor:pointer;transition:color .2s,border-color .2s,box-shadow .2s,background .2s;
+  clip-path:var(--clip-sm);padding:0;
+}
+.icon-btn svg{width:17px;height:17px}
+.icon-btn:hover,.icon-btn[aria-pressed="true"]{
+  color:var(--cyan);border-color:rgba(0,229,255,.55);
+  box-shadow:0 0 16px rgba(0,229,255,.18);background:rgba(0,229,255,.06);
+}
+.desktop-only{display:none!important}
+
+/* ── Sidebar (escritorio) ────────────────────────────────────── */
+.sidebar{
+  display:none;position:fixed;left:0;top:calc(var(--header-h) + env(safe-area-inset-top));
+  bottom:0;width:232px;z-index:150;padding:22px 13px calc(18px + env(safe-area-inset-bottom));
+  flex-direction:column;justify-content:space-between;
+  background:linear-gradient(180deg,rgba(8,8,15,.92),rgba(5,5,8,.97));
+  -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+  border-right:1px solid var(--line);
+}
+.sidebar__nav{display:flex;flex-direction:column;gap:7px}
+.sidebar__label{
+  font-family:var(--font-display);font-size:8px;letter-spacing:2.6px;
+  color:var(--muted);text-transform:uppercase;padding:0 10px;margin-bottom:7px;
+}
+.navlink{
+  position:relative;display:flex;align-items:center;gap:11px;width:100%;
+  padding:11px 10px;background:transparent;border:1px solid transparent;
+  color:var(--muted);cursor:pointer;text-align:left;
+  font-family:var(--font-ui);font-size:12.5px;font-weight:700;
+  letter-spacing:1.5px;text-transform:uppercase;
+  transition:color .2s,background .2s,border-color .2s;
+  clip-path:polygon(0 0,calc(100% - 9px) 0,100% 9px,100% 100%,0 100%);
+}
+.navlink svg{width:18px;height:18px;flex:none}
+.navlink .idx{margin-left:auto;font-family:var(--font-display);font-size:8px;opacity:.45}
+.navlink:hover{color:var(--plata);background:rgba(232,232,240,.04)}
+.navlink.active{
+  color:var(--plata);border-color:rgba(123,43,255,.35);
+  background:linear-gradient(90deg,rgba(123,43,255,.24),rgba(123,43,255,.02));
+}
+.navlink.active::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:var(--cyan);box-shadow:0 0 14px var(--cyan);
+}
+.navlink.active svg{color:var(--cyan);filter:drop-shadow(0 0 5px rgba(0,229,255,.55))}
+.sidebar__pie{
+  border-top:1px solid var(--line);padding-top:14px;padding-inline:8px;
+  display:flex;flex-direction:column;gap:4px;
+  font-family:var(--font-ui);font-size:9px;letter-spacing:1.4px;
+  text-transform:uppercase;color:var(--muted);
+}
+.sidebar__pie .linea{display:flex;align-items:center;gap:6px;color:var(--cyan);font-weight:700}
+.pulso{width:6px;height:6px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan);animation:pulso 2.2s ease-in-out infinite}
+.sidebar__pie small{font-size:8.5px;color:var(--muted);letter-spacing:1px}
+
+/* ── Estructura principal ────────────────────────────────────── */
+main{
+  position:relative;z-index:1;
+  padding:calc(var(--header-h) + env(safe-area-inset-top) + 16px) 12px calc(var(--nav-h) + env(safe-area-inset-bottom) + 26px);
+}
+.view{display:none}
+.view.active{display:block;animation:vistaIn .42s var(--ease)}
+@keyframes vistaIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.view-head{
+  position:relative;overflow:hidden;
+  padding:18px 16px;margin-bottom:14px;
+  border:1px solid var(--line);background:rgba(9,9,16,.72);
+  clip-path:var(--clip-lg);
+}
+.view-head.has-banner{background-size:cover;background-position:center}
+.view-head.has-banner::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,rgba(5,5,8,.94) 0%,rgba(5,5,8,.78) 55%,rgba(5,5,8,.32) 100%);
+}
+.view-head > *{position:relative;z-index:1}
+.view-head__fila{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.view-head h2{
+  font-family:var(--font-display);font-size:clamp(22px,5.4vw,34px);
+  font-weight:900;letter-spacing:1.6px;text-transform:uppercase;line-height:1.12;
+  margin:5px 0 3px;text-shadow:0 0 26px rgba(123,43,255,.4);
+}
+.view-head h2 em{font-style:normal;color:var(--purple)}
+.view-head p{color:var(--muted);font-size:12.5px;max-width:58ch;line-height:1.55}
+.view-head__icono{
+  width:46px;height:46px;flex:none;display:grid;place-items:center;
+  border:1px solid rgba(0,229,255,.35);background:rgba(0,229,255,.05);
+  color:var(--cyan);clip-path:var(--clip-sm);
+  box-shadow:0 0 20px rgba(0,229,255,.1) inset;
+}
+.view-head__icono svg{width:23px;height:23px}
+
+/* ── Paneles ─────────────────────────────────────────────────── */
+.panel{
+  position:relative;
+  background:linear-gradient(158deg,rgba(16,16,28,.93),rgba(7,7,13,.9));
+  border:1px solid var(--line);
+  clip-path:var(--clip-lg);
+  padding:16px;
+}
+.panel::before{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  border:1px solid rgba(123,43,255,.14);clip-path:inherit;
+}
+.panel::after{
+  content:'';position:absolute;top:0;right:0;width:56px;height:1px;
+  background:linear-gradient(90deg,transparent,var(--cyan));opacity:.55;pointer-events:none;
+}
+.panel__head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.panel__titulo{
+  font-family:var(--font-display);font-size:10px;font-weight:700;
+  letter-spacing:2.2px;text-transform:uppercase;color:var(--plata);
+}
+.panel__sub{font-family:var(--font-ui);font-size:9px;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted)}
+
+/* ── Botones ─────────────────────────────────────────────────── */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  padding:10px 15px;border:1px solid rgba(123,43,255,.5);
+  background:rgba(123,43,255,.13);color:var(--plata);cursor:pointer;
+  font-family:var(--font-ui);font-size:11.5px;font-weight:700;
+  letter-spacing:1.5px;text-transform:uppercase;line-height:1.1;
+  clip-path:var(--clip-sm);transition:background .2s,border-color .2s,box-shadow .2s,transform .15s;
+  white-space:nowrap;
+}
+.btn svg{width:15px;height:15px;flex:none}
+.btn:hover{background:rgba(123,43,255,.28);border-color:rgba(123,43,255,.85);box-shadow:0 0 20px rgba(123,43,255,.3)}
+.btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.32;cursor:not-allowed;box-shadow:none;transform:none}
+.btn--cian{border-color:rgba(0,229,255,.5);background:rgba(0,229,255,.09);color:#d8fbff}
+.btn--cian:hover{background:rgba(0,229,255,.18);border-color:rgba(0,229,255,.9);box-shadow:0 0 22px rgba(0,229,255,.28)}
+.btn--sangre{border-color:rgba(200,30,60,.55);background:rgba(200,30,60,.12);color:#ffdbe1}
+.btn--sangre:hover{background:rgba(200,30,60,.24);border-color:rgba(200,30,60,.9);box-shadow:0 0 20px rgba(200,30,60,.26)}
+.btn--fantasma{background:transparent;border-color:var(--line-strong);color:var(--muted)}
+.btn--fantasma:hover{background:rgba(232,232,240,.06);border-color:var(--plata);color:var(--plata);box-shadow:none}
+.btn--sm{padding:7px 10px;font-size:10px;letter-spacing:1.1px}
+.btn--bloque{width:100%}
+.fila-botones{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+
+/* ── Formularios ─────────────────────────────────────────────── */
+.field{display:flex;flex-direction:column;gap:5px;width:100%}
+.field > span{
+  font-family:var(--font-ui);font-size:9.5px;font-weight:700;
+  letter-spacing:1.6px;text-transform:uppercase;color:var(--muted);
+}
+input,select,textarea{
+  width:100%;padding:10px 11px;border-radius:2px;
+  background:rgba(3,3,7,.8);border:1px solid var(--line);
+  color:var(--plata);font-family:var(--font-body);font-size:14px;
+  transition:border-color .2s,box-shadow .2s;
+}
+input::placeholder,textarea::placeholder{color:#5f5f78}
+input:focus,select:focus,textarea:focus{
+  outline:none;border-color:var(--cyan);
+  box-shadow:0 0 0 1px rgba(0,229,255,.16),0 0 18px rgba(0,229,255,.1);
+}
+textarea{resize:vertical;min-height:130px;line-height:1.6}
+select{
+  appearance:none;-webkit-appearance:none;cursor:pointer;padding-right:32px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%2300e5ff' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 11px center;
+}
+input[type="date"]{color-scheme:dark}
+input[type="number"]{-moz-appearance:textfield}
+input[type="checkbox"]{accent-color:var(--cyan)}
+.form-grid{display:grid;grid-template-columns:1fr;gap:12px}
+.form-grid--2{grid-template-columns:1fr 1fr}
+@media(max-width:420px){.form-grid--2{grid-template-columns:1fr}}
+
+/* ══════════════ DASHBOARD ══════════════ */
+.hero{
+  display:grid;grid-template-columns:1fr;overflow:hidden;padding:0;
+  min-height:260px;margin-bottom:13px;
+  background:linear-gradient(140deg,rgba(20,12,38,.92),rgba(7,7,13,.95) 60%);
+}
+.hero::after{display:none}
+.hero__contenido{
+  position:relative;z-index:2;display:flex;flex-direction:column;
+  justify-content:center;gap:11px;padding:20px 17px;min-height:260px;
+}
+.hero__contenido::before{
+  content:'';position:absolute;left:-25%;top:-60%;width:110%;height:160%;
+  background:radial-gradient(circle,rgba(123,43,255,.18),transparent 62%);
+  pointer-events:none;
+}
+.hero__contenido > *{position:relative}
+.hero h2{
+  font-family:var(--font-display);font-size:clamp(25px,6.2vw,42px);
+  font-weight:900;line-height:1.08;letter-spacing:1px;
+  text-shadow:0 0 34px rgba(123,43,255,.45);
+}
+.hero h2 span{color:var(--cyan)}
+.hero__frase{
+  font-family:var(--font-ui);font-size:clamp(15px,3.8vw,20px);
+  font-weight:600;line-height:1.4;color:#d9d9e8;
+  border-left:2px solid var(--crimson);padding-left:12px;
+  min-height:2.8em;display:flex;align-items:center;
+  transition:opacity .35s,transform .35s;
+}
+.hero__frase.cambiando{opacity:0;transform:translateX(7px)}
+.hero__chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:4px 8px;border:1px solid var(--line);background:rgba(232,232,240,.03);
+  font-family:var(--font-ui);font-size:9px;font-weight:600;
+  letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);
+  clip-path:var(--clip-sm);
+}
+.chip strong{color:var(--plata);font-weight:700}
+.chip--cian{border-color:rgba(0,229,255,.3);color:#a9f5ff;background:rgba(0,229,255,.05)}
+.hero__acciones{display:flex;flex-wrap:wrap;gap:8px;margin-top:2px}
+.hero__retrato{
+  position:relative;min-height:240px;overflow:hidden;
+  background:
+    radial-gradient(ellipse at 50% 35%,rgba(123,43,255,.24),transparent 60%),
+    linear-gradient(180deg,rgba(8,8,15,.2),rgba(5,5,8,.9));
+  border-top:1px solid var(--line);
+}
+.hero__retrato::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(180deg,transparent 45%,rgba(5,5,8,.9) 100%),
+             linear-gradient(90deg,rgba(5,5,8,.55),transparent 40%);
+  pointer-events:none;
+}
+.hero__img{
+  position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+  object-position:center top;filter:grayscale(.35) contrast(1.15) saturate(.85);
+}
+.hero__fallback{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center}
+.hero__fallback svg{width:min(280px,86%);height:100%;max-height:330px}
+.hero__etiqueta{
+  position:absolute;left:12px;bottom:11px;z-index:3;
+  font-family:var(--font-ui);font-size:8.5px;font-weight:700;
+  letter-spacing:2.2px;text-transform:uppercase;color:var(--muted);
+  padding-left:8px;border-left:2px solid var(--cyan);
+}
+
+/* Tarjetas rápidas */
+.quick-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.quick{
+  position:relative;text-align:left;padding:13px;min-height:108px;
+  display:flex;flex-direction:column;gap:5px;cursor:pointer;
+  background:linear-gradient(155deg,rgba(15,15,26,.9),rgba(7,7,13,.92));
+  border:1px solid var(--line);clip-path:var(--clip-md);
+  transition:border-color .2s,transform .2s,background .2s;
+  overflow:hidden;
+}
+.quick:hover{border-color:rgba(0,229,255,.4);transform:translateY(-2px);background:linear-gradient(155deg,rgba(20,20,34,.95),rgba(8,8,15,.95))}
+.quick::after{
+  content:'';position:absolute;right:-18px;bottom:-18px;width:56px;height:56px;
+  border:1px solid rgba(0,229,255,.14);transform:rotate(45deg);
+}
+.quick__label{
+  display:flex;align-items:center;justify-content:space-between;gap:6px;
+  font-family:var(--font-display);font-size:7.5px;font-weight:700;
+  letter-spacing:1.8px;text-transform:uppercase;color:var(--cyan);
+}
+.quick__label svg{width:13px;height:13px;opacity:.8}
+.quick__valor{
+  font-family:var(--font-ui);font-size:22px;font-weight:700;line-height:1.15;
+  color:var(--plata);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.quick__valor--sm{font-size:15px;line-height:1.25;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.5em}
+.quick__meta{font-size:10px;color:var(--muted);line-height:1.4;margin-top:auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.quick__meta--ok{color:var(--ok)}
+.quick__meta.text-crimson{color:#ff9bac}
+
+/* Rejilla inferior del dashboard */
+.dash-grid{display:grid;grid-template-columns:1fr;gap:12px;margin-top:12px}
+.panel--media{overflow:hidden;padding:17px}
+.media-bg{
+  position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+  opacity:.22;filter:saturate(.75) contrast(1.2);z-index:0;
+}
+.panel--media::before{background:linear-gradient(180deg,rgba(5,5,8,.25),rgba(5,5,8,.82));border:0;z-index:0}
+.panel--media > *{position:relative;z-index:1}
+
+/* Reactor de arco */
+.reactor{position:relative;width:min(215px,68vw);aspect-ratio:1;margin:4px auto 8px}
+.reactor svg{width:100%;height:100%;overflow:visible}
+.reactor__centro{position:absolute;inset:0;display:grid;place-content:center;text-align:center;pointer-events:none}
+.reactor__pct{
+  font-family:var(--font-display);font-size:32px;font-weight:900;line-height:1;
+  color:var(--cyan);text-shadow:0 0 22px rgba(0,229,255,.75);
+  font-variant-numeric:tabular-nums;
+}
+.reactor__pct small{font-size:13px;color:#9defff}
+.reactor__estado{
+  font-family:var(--font-ui);font-size:7.5px;font-weight:700;letter-spacing:1.6px;
+  text-transform:uppercase;color:var(--muted);margin-top:5px;
+}
+.reactor__anillo-giro{animation:giro 26s linear infinite;transform-origin:100px 100px}
+.reactor__anillo-giro--reves{animation:giroReves 18s linear infinite;transform-origin:100px 100px}
+.reactor__nucleo{animation:pulsoNucleo 3s ease-in-out infinite}
+.arc-desglose{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
+.arc-desglose div{
+  text-align:center;padding:7px 4px;border:1px solid var(--line);
+  background:rgba(3,3,7,.4);clip-path:var(--clip-sm);
+}
+.arc-desglose b{display:block;font-family:var(--font-ui);font-size:15px;color:var(--plata);line-height:1.1}
+.arc-desglose span{font-family:var(--font-ui);font-size:7.5px;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+
+/* Notas recientes / respaldo */
+.notas-recientes{display:flex;flex-direction:column;gap:7px}
+.nota-fila{
+  display:flex;align-items:center;gap:10px;width:100%;text-align:left;
+  padding:9px 10px;border:1px solid var(--line);background:rgba(3,3,7,.35);
+  cursor:pointer;transition:border-color .2s,background .2s;
+}
+.nota-fila:hover{border-color:rgba(123,43,255,.45);background:rgba(123,43,255,.06)}
+.nota-fila__tag{
+  flex:none;font-family:var(--font-ui);font-size:8px;font-weight:700;
+  letter-spacing:1px;color:var(--cyan);border:1px solid rgba(0,229,255,.3);
+  padding:2px 5px;
+}
+.nota-fila__cuerpo{min-width:0;flex:1}
+.nota-fila__titulo{font-family:var(--font-ui);font-size:13px;font-weight:600;color:var(--plata);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nota-fila__fecha{font-size:9px;color:var(--muted);white-space:nowrap}
+.nota-fila svg{width:13px;height:13px;color:var(--muted);flex:none}
+.vacio{
+  text-align:center;padding:22px 12px;color:var(--muted);
+  font-family:var(--font-ui);font-size:11.5px;letter-spacing:.5px;
+  border:1px dashed rgba(232,232,240,.16);background:rgba(3,3,7,.25);
+}
+.vacio strong{display:block;font-family:var(--font-display);font-size:9px;letter-spacing:1.6px;color:var(--plata);text-transform:uppercase;margin-bottom:5px}
+.respaldo-acciones{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.respaldo-nota{font-size:10px;color:var(--muted);margin-top:9px;line-height:1.5;display:flex;gap:6px}
+.respaldo-nota svg{width:13px;height:13px;flex:none;color:var(--cyan);margin-top:1px}
+.pie-app{
+  text-align:center;margin-top:16px;padding:10px 4px;
+  font-family:var(--font-ui);font-size:8px;letter-spacing:1.8px;
+  text-transform:uppercase;color:#85859a;
+}
+.sr-only{
+  position:absolute;width:1px;height:1px;padding:0;margin:-1px;
+  overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;
+}
+/* ══════════════ POMODORO ══════════════ */
+.pomo-grid{display:grid;grid-template-columns:1fr;gap:12px}
+.pomo-modos{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:8px}
+.modo-btn{
+  padding:7px 11px;border:1px solid var(--line);background:rgba(3,3,7,.5);
+  color:var(--muted);cursor:pointer;font-family:var(--font-ui);
+  font-size:9.5px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;
+  clip-path:var(--clip-sm);transition:all .2s;
+}
+.modo-btn:hover{color:var(--plata);border-color:var(--line-strong)}
+.modo-btn.active{
+  color:#d8fbff;border-color:rgba(0,229,255,.6);
+  background:rgba(0,229,255,.1);box-shadow:0 0 16px rgba(0,229,255,.15);
+}
+.pomo-esfera{position:relative;width:min(270px,76vw);aspect-ratio:1;margin:2px auto 4px}
+.pomo-esfera svg{width:100%;height:100%;transform:rotate(-90deg);overflow:visible}
+.pomo-esfera__centro{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:2px;pointer-events:none;
+}
+.pomo-tiempo{
+  font-family:var(--font-ui);font-size:clamp(44px,13vw,58px);font-weight:700;
+  letter-spacing:2px;line-height:1;color:var(--plata);
+  font-variant-numeric:tabular-nums;text-shadow:0 0 28px rgba(0,229,255,.22);
+}
+.pomo-estado{
+  font-family:var(--font-display);font-size:8px;font-weight:700;
+  letter-spacing:2.6px;text-transform:uppercase;color:var(--muted);margin-top:4px;
+}
+.pomo-estado.is-live{color:var(--cyan);text-shadow:0 0 10px rgba(0,229,255,.6);animation:parpadeo 1.8s ease-in-out infinite}
+.pomo-ciclo{font-family:var(--font-ui);font-size:8.5px;letter-spacing:1.4px;color:var(--muted);text-transform:uppercase;margin-top:3px}
+.pomo-controles{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:12px}
+.sesiones-resumen{
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  margin-top:14px;padding-top:12px;border-top:1px solid var(--line);
+  flex-wrap:wrap;
+}
+.sesiones-resumen__num{
+  font-family:var(--font-ui);font-size:25px;font-weight:700;color:var(--cyan);
+  line-height:1;text-shadow:0 0 16px rgba(0,229,255,.4);
+}
+.sesiones-resumen__txt{font-family:var(--font-ui);font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);line-height:1.4}
+.puntos-ciclo{display:flex;gap:4px;margin-left:auto}
+.puntos-ciclo i{width:7px;height:7px;border:1px solid rgba(0,229,255,.4);transform:rotate(45deg);background:transparent}
+.puntos-ciclo i.on{background:var(--cyan);box-shadow:0 0 8px var(--cyan)}
+.config-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.config-grid .field > span{font-size:8.5px;letter-spacing:.8px}
+.config-grid input{text-align:center;font-family:var(--font-ui);font-size:17px;font-weight:700}
+.protocolo-lista{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.protocolo-lista li{display:flex;gap:8px;font-size:11.5px;color:var(--muted);line-height:1.5}
+.protocolo-lista li::before{content:'▸';color:var(--cyan);flex:none}
+.interruptor{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  margin-top:12px;padding:9px 10px;border:1px solid var(--line);
+  background:rgba(3,3,7,.35);font-family:var(--font-ui);font-size:10px;
+  letter-spacing:1px;text-transform:uppercase;color:var(--muted);
+}
+.switch{position:relative;width:38px;height:20px;flex:none}
+.switch input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer;z-index:2}
+.switch span{
+  position:absolute;inset:0;border:1px solid var(--line-strong);
+  background:#0a0a12;transition:.2s;
+}
+.switch span::after{
+  content:'';position:absolute;top:3px;left:3px;width:12px;height:12px;
+  background:var(--muted);transition:.2s;
+}
+.switch input:checked + span{border-color:rgba(0,229,255,.6);background:rgba(0,229,255,.12)}
+.switch input:checked + span::after{left:21px;background:var(--cyan);box-shadow:0 0 8px var(--cyan)}
+
+/* ══════════════ CRONÓMETRO ══════════════ */
+.crono-panel{text-align:center;padding:20px 14px}
+.crono-display{
+  font-family:var(--font-ui);font-size:clamp(38px,10.5vw,70px);font-weight:700;
+  letter-spacing:1.5px;line-height:1.1;color:var(--plata);
+  font-variant-numeric:tabular-nums;text-shadow:0 0 30px rgba(123,43,255,.35);
+  word-break:keep-all;
+}
+.crono-display .ms{color:var(--cyan);font-size:.62em;text-shadow:0 0 14px rgba(0,229,255,.5)}
+.crono-estado{
+  font-family:var(--font-display);font-size:8px;font-weight:700;
+  letter-spacing:2.4px;text-transform:uppercase;color:var(--muted);margin-top:6px;
+}
+.crono-estado.is-live{color:var(--ok)}
+.crono-controles{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:16px}
+.crono-info{
+  display:flex;justify-content:center;gap:16px;flex-wrap:wrap;
+  margin-top:14px;padding-top:12px;border-top:1px solid var(--line);
+  font-family:var(--font-ui);font-size:9px;letter-spacing:1.3px;text-transform:uppercase;color:var(--muted);
+}
+.crono-info b{color:var(--plata);font-size:11px}
+.vueltas-panel{margin-top:12px}
+.vueltas-cabecera{
+  display:grid;grid-template-columns:44px 1fr 1fr;gap:8px;padding:0 10px 7px;
+  font-family:var(--font-ui);font-size:8px;font-weight:700;
+  letter-spacing:1.4px;text-transform:uppercase;color:var(--muted);
+  border-bottom:1px solid var(--line);
+}
+.vueltas-cabecera span:nth-child(2),.vueltas-cabecera span:nth-child(3){text-align:right}
+.lista-vueltas{list-style:none;margin:0;padding:0;max-height:290px;overflow-y:auto}
+.lista-vueltas li{
+  display:grid;grid-template-columns:44px 1fr 1fr;gap:8px;align-items:center;
+  padding:9px 10px;border-bottom:1px solid rgba(232,232,240,.06);
+  font-family:var(--font-ui);font-size:13px;font-variant-numeric:tabular-nums;
+}
+.lista-vueltas li:first-child{background:rgba(0,229,255,.035)}
+.lista-vueltas .num{font-family:var(--font-display);font-size:9px;color:var(--cyan);letter-spacing:1px}
+.lista-vueltas .parcial{text-align:right;color:var(--purple);font-weight:600}
+.lista-vueltas .total{text-align:right;color:var(--plata);font-weight:700}
+.panel-botones-final{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;margin-top:12px}
+
+/* ══════════════ NOTAS ══════════════ */
+.notas-barra{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.buscador{position:relative;flex:1}
+.buscador svg{
+  position:absolute;left:11px;top:50%;transform:translateY(-50%);
+  width:15px;height:15px;color:var(--muted);pointer-events:none;
+}
+.buscador input{padding-left:34px}
+.notas-contador{
+  font-family:var(--font-ui);font-size:9px;letter-spacing:1.4px;
+  text-transform:uppercase;color:var(--muted);white-space:nowrap;
+}
+.notas-grid{display:grid;grid-template-columns:1fr;gap:10px}
+.nota-card{
+  position:relative;display:flex;flex-direction:column;gap:7px;
+  padding:14px;cursor:pointer;min-height:142px;
+  border:1px solid rgba(123,43,255,.22);
+  background:linear-gradient(165deg,rgba(22,14,38,.82),rgba(7,7,13,.92));
+  clip-path:var(--clip-md);transition:transform .2s,border-color .2s,box-shadow .2s;
+  text-align:left;width:100%;
+}
+.nota-card:hover{transform:translateY(-2px);border-color:rgba(123,43,255,.55);box-shadow:0 0 26px rgba(123,43,255,.18)}
+.nota-card::before{
+  content:'';position:absolute;left:0;top:14px;bottom:14px;width:2px;
+  background:linear-gradient(180deg,var(--purple),transparent);
+}
+.nota-card__top{display:flex;align-items:center;gap:7px}
+.tag{
+  display:inline-flex;align-items:center;padding:2px 6px;
+  font-family:var(--font-ui);font-size:7.5px;font-weight:700;
+  letter-spacing:1.2px;text-transform:uppercase;border:1px solid var(--line-strong);
+  color:var(--muted);white-space:nowrap;
+}
+.tag--idea{color:var(--cyan);border-color:rgba(0,229,255,.4);background:rgba(0,229,255,.06)}
+.tag--diario{color:#c9b4ff;border-color:rgba(123,43,255,.45);background:rgba(123,43,255,.09)}
+.tag--mision{color:#ffb7c3;border-color:rgba(200,30,60,.45);background:rgba(200,30,60,.09)}
+.tag--estudio{color:var(--ok);border-color:rgba(47,230,180,.35);background:rgba(47,230,180,.06)}
+.tag--nota{color:#c9c9da;border-color:var(--line-strong)}
+.nota-card__fecha{margin-left:auto;font-size:9px;color:var(--muted);white-space:nowrap}
+.nota-card h3{
+  font-family:var(--font-ui);font-size:17px;font-weight:700;line-height:1.25;
+  color:var(--plata);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.nota-card p{
+  font-size:11.5px;color:var(--muted);line-height:1.55;
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;
+  word-break:break-word;
+}
+.nota-card__pie{
+  display:flex;align-items:center;justify-content:space-between;gap:6px;
+  margin-top:auto;padding-top:7px;border-top:1px solid rgba(232,232,240,.06);
+  font-family:var(--font-ui);font-size:8.5px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);
+}
+.nota-card__borrar{
+  border:1px solid rgba(200,30,60,.25);background:rgba(200,30,60,.06);
+  color:#d68b98;width:24px;height:24px;display:grid;place-items:center;
+  cursor:pointer;transition:.2s;padding:0;
+}
+.nota-card__borrar:hover{color:#fff;background:rgba(200,30,60,.35);border-color:var(--crimson)}
+.nota-card__borrar svg{width:12px;height:12px}
+
+/* ══════════════ METAS ══════════════ */
+.stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}
+.stat{
+  padding:12px;border:1px solid var(--line);background:rgba(9,9,16,.7);
+  clip-path:var(--clip-sm);position:relative;overflow:hidden;
+}
+.stat::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--cyan);opacity:.6}
+.stat--morado::before{background:var(--purple)}
+.stat--sangre::before{background:var(--crimson)}
+.stat--plata::before{background:var(--plata)}
+.stat b{display:block;font-family:var(--font-ui);font-size:27px;font-weight:700;line-height:1;color:var(--plata)}
+.stat span{display:block;font-family:var(--font-ui);font-size:8px;letter-spacing:1.3px;text-transform:uppercase;color:var(--muted);margin-top:3px}
+.stat small{display:block;font-size:8.5px;color:var(--muted);margin-top:2px}
+.filtros{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.filtro{
+  padding:5px 9px;border:1px solid var(--line);background:transparent;
+  color:var(--muted);cursor:pointer;font-family:var(--font-ui);font-size:9px;
+  font-weight:700;letter-spacing:1.1px;text-transform:uppercase;transition:.2s;
+}
+.filtro.active{color:var(--plata);border-color:rgba(123,43,255,.55);background:rgba(123,43,255,.14)}
+.metas-grid{display:grid;grid-template-columns:1fr;gap:12px}
+.meta-card{padding:15px;display:flex;flex-direction:column;gap:9px}
+.meta-card.is-done{opacity:.72}
+.meta-card.is-done h3{text-decoration:line-through;text-decoration-color:rgba(0,229,255,.5)}
+.meta-card__top{display:flex;flex-wrap:wrap;align-items:center;gap:5px}
+.meta-badge{
+  font-family:var(--font-ui);font-size:7.5px;font-weight:700;letter-spacing:1.1px;
+  padding:2px 6px;border:1px solid var(--line-strong);text-transform:uppercase;
+}
+.meta-badge--salud{color:var(--ok);border-color:rgba(47,230,180,.35);background:rgba(47,230,180,.06)}
+.meta-badge--estudio{color:#c9b4ff;border-color:rgba(123,43,255,.45);background:rgba(123,43,255,.09)}
+.meta-badge--trabajo{color:#d8d8e8;border-color:rgba(232,232,240,.3);background:rgba(232,232,240,.05)}
+.meta-badge--personal{color:#ffb7c3;border-color:rgba(200,30,60,.4);background:rgba(200,30,60,.08)}
+.prio{font-family:var(--font-ui);font-size:7.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-left:auto;white-space:nowrap}
+.prio--alta{color:#ff9bac}
+.prio--media{color:#c4a6ff}
+.prio--baja{color:#8ce8f5}
+.meta-completada-tag{
+  font-family:var(--font-ui);font-size:7.5px;font-weight:700;letter-spacing:1.2px;
+  color:var(--cyan);border:1px solid rgba(0,229,255,.4);padding:2px 6px;
+  background:rgba(0,229,255,.07);
+}
+.meta-card h3{font-family:var(--font-ui);font-size:18px;font-weight:700;line-height:1.25;color:var(--plata)}
+.meta-card__desc{font-size:11.5px;color:var(--muted);line-height:1.55;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.meta-fechas{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-family:var(--font-ui);font-size:9.5px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted)}
+.meta-fechas span{display:inline-flex;align-items:center;gap:4px}
+.meta-fechas svg{width:12px;height:12px}
+.dias--ok{color:var(--muted)}
+.dias--pronto{color:#ffcc66}
+.dias--vencida{color:#ff8fa2}
+.barra{height:5px;background:rgba(232,232,240,.08);overflow:hidden;position:relative}
+.barra__relleno{
+  height:100%;width:0;background:linear-gradient(90deg,var(--purple),var(--cyan));
+  box-shadow:0 0 12px rgba(0,229,255,.35);transition:width .5s var(--ease);
+}
+.barra__relleno--riesgo{background:linear-gradient(90deg,var(--crimson),#ff7b52)}
+.barra__labels{display:flex;justify-content:space-between;gap:8px;font-family:var(--font-ui);font-size:8.5px;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+.hitos{list-style:none;margin:2px 0 0;padding:0;display:flex;flex-direction:column;gap:1px}
+.hito{
+  display:flex;align-items:flex-start;gap:8px;padding:6px 7px;cursor:pointer;
+  border:1px solid transparent;transition:background .15s,border-color .15s;
+  font-size:11.5px;color:#c3c3d6;line-height:1.4;
+}
+.hito:hover{background:rgba(0,229,255,.04);border-color:rgba(0,229,255,.16)}
+.hito input{width:14px;height:14px;margin:1px 0 0;flex:none;cursor:pointer}
+.hito.hecho span{color:#6f6f86;text-decoration:line-through}
+.meta-acciones{display:flex;flex-wrap:wrap;gap:6px;margin-top:3px;padding-top:9px;border-top:1px solid var(--line)}
+.meta-acciones .btn{padding:5px 8px;font-size:9px;letter-spacing:.8px}
+.sin-hitos{font-size:10px;color:var(--muted);font-style:italic;padding:3px 0}
+
+/* Ruta de progreso (timeline) */
+.timeline-panel{margin-top:12px}
+.timeline{position:relative;padding-left:24px;margin-top:13px}
+.timeline::before{
+  content:'';position:absolute;left:6px;top:3px;bottom:3px;width:1px;
+  background:linear-gradient(180deg,var(--cyan),var(--purple),transparent);
+}
+.timeline__item{position:relative;padding:0 0 14px 4px}
+.timeline__item:last-child{padding-bottom:0}
+.timeline__item::before{
+  content:'';position:absolute;left:-22px;top:3px;width:9px;height:9px;
+  border:1px solid var(--cyan);background:var(--bg);transform:rotate(45deg);
+  box-shadow:0 0 8px rgba(0,229,255,.5);
+}
+.timeline__item.vencida::before{border-color:var(--crimson);box-shadow:0 0 8px rgba(200,30,60,.6)}
+.timeline__fecha{font-family:var(--font-ui);font-size:8px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--cyan)}
+.timeline__item.vencida .timeline__fecha{color:#ff9bac}
+.timeline__titulo{font-family:var(--font-ui);font-size:14px;font-weight:700;color:var(--plata);line-height:1.3;margin:1px 0 4px}
+.timeline__meta{display:flex;align-items:center;gap:8px;font-size:9px;color:var(--muted)}
+
+/* ══════════════ MODALES / TOASTS ══════════════ */
+.modal{
+  position:fixed;inset:0;z-index:400;display:none;align-items:center;justify-content:center;
+  padding:12px;background:rgba(2,2,5,.8);
+  -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+}
+.modal.open{display:flex;animation:fundido .2s ease}
+.modal__panel{
+  width:100%;max-width:580px;max-height:92vh;max-height:92dvh;overflow-y:auto;
+  padding:18px;background:linear-gradient(158deg,#11111d,#07070c);
+  border:1px solid rgba(123,43,255,.42);
+  clip-path:var(--clip-lg);
+  box-shadow:0 0 70px rgba(123,43,255,.22);
+  animation:modalIn .3s var(--ease);
+}
+.modal__panel--sm{max-width:400px}
+.modal__head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:14px}
+.modal__head h3{font-family:var(--font-display);font-size:15px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;margin-top:4px}
+.modal__cuerpo{display:flex;flex-direction:column;gap:11px}
+.modal__pie{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:14px;padding-top:11px;border-top:1px solid var(--line)}
+.autosave{
+  display:inline-flex;align-items:center;gap:5px;
+  font-family:var(--font-ui);font-size:8.5px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);
+}
+.autosave i{width:5px;height:5px;border-radius:50%;background:var(--ok);box-shadow:0 0 6px var(--ok)}
+.autosave.guardando i{background:var(--cyan);animation:pulso 1s infinite}
+.nota-meta{font-family:var(--font-ui);font-size:8.5px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted)}
+.hitos-editor{display:flex;flex-direction:column;gap:6px}
+.hitos-editor__fila{display:flex;gap:6px}
+.hitos-editor__fila input{flex:1}
+.lista-hitos-draft{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:5px;max-height:150px;overflow-y:auto}
+.hito-draft{
+  display:flex;align-items:center;gap:7px;padding:6px 8px;
+  border:1px solid var(--line);background:rgba(3,3,7,.45);font-size:11.5px;color:#c3c3d6;
+}
+.hito-draft .check{color:var(--cyan);font-size:10px;flex:none}
+.hito-draft span.txt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hito-draft button{
+  border:0;background:transparent;color:#8b6b74;cursor:pointer;
+  font-size:15px;line-height:1;padding:2px 4px;flex:none;
+}
+.hito-draft button:hover{color:#ff8fa2}
+.modal__nota{font-size:10.5px;color:var(--muted);line-height:1.5}
+.confirmar-texto{font-size:13.5px;line-height:1.65;color:#cfcfdf;padding:2px 0}
+
+.toasts{
+  position:fixed;left:50%;transform:translateX(-50%);
+  bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 12px);
+  z-index:600;display:flex;flex-direction:column;gap:7px;
+  width:min(92vw,420px);pointer-events:none;
+}
+.toast{
+  padding:10px 13px;background:rgba(9,9,16,.97);
+  border:1px solid rgba(0,229,255,.35);border-left:3px solid var(--cyan);
+  color:var(--plata);font-size:12px;line-height:1.45;
+  box-shadow:0 8px 30px rgba(0,0,0,.5),0 0 22px rgba(0,229,255,.1);
+  clip-path:var(--clip-sm);animation:toastIn .28s var(--ease);
+}
+.toast--err{border-color:rgba(200,30,60,.5);border-left-color:var(--crimson);box-shadow:0 8px 30px rgba(0,0,0,.5),0 0 22px rgba(200,30,60,.12)}
+.toast--ok{border-color:rgba(47,230,180,.45);border-left-color:var(--ok)}
+.toast.saliendo{opacity:0;transform:translateY(8px);transition:.3s}
+
+/* ══════════════ NAV INFERIOR MÓVIL ══════════════ */
+.bottomnav{
+  position:fixed;left:0;right:0;bottom:0;z-index:300;
+  display:flex;height:calc(var(--nav-h) + env(safe-area-inset-bottom));
+  padding:6px 4px env(safe-area-inset-bottom);
+  background:rgba(5,5,8,.94);
+  -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);
+  border-top:1px solid var(--line);
+}
+.bottomnav::before{
+  content:'';position:absolute;left:0;right:0;top:-1px;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(123,43,255,.55),rgba(0,229,255,.45),transparent);
+}
+.bottomnav button{
+  position:relative;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3px;padding:5px 1px;background:none;border:0;cursor:pointer;
+  color:var(--muted);font-family:var(--font-ui);font-size:8.5px;font-weight:700;
+  letter-spacing:.6px;text-transform:uppercase;transition:color .2s;
+}
+.bottomnav button svg{width:19px;height:19px;transition:filter .2s}
+.bottomnav button.active{color:var(--cyan)}
+.bottomnav button.active svg{filter:drop-shadow(0 0 6px rgba(0,229,255,.65))}
+.bottomnav button.active::before{
+  content:'';position:absolute;top:-6px;left:50%;transform:translateX(-50%);
+  width:22px;height:2px;background:var(--cyan);box-shadow:0 0 10px var(--cyan);
+}
+.nav-badge{
+  position:absolute;top:4px;right:calc(50% - 18px);min-width:13px;height:13px;
+  display:grid;place-items:center;padding:0 3px;border-radius:7px;
+  background:var(--crimson);color:#fff;font-size:7px;font-weight:700;
+}
+
+/* ══════════════ RESPALDO REDISEÑADO ══════════════ */
+.respaldo-panel{padding:17px}
+.respaldo-medidor{padding:11px;border:1px solid var(--line);background:rgba(3,3,7,.4);clip-path:var(--clip-sm)}
+.respaldo-medidor__top{display:flex;justify-content:space-between;align-items:center;gap:8px;font-family:var(--font-ui);font-size:8.5px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted)}
+.respaldo-medidor__top b{color:var(--cyan);font-size:11px}
+.respaldo-barra{height:6px;margin:7px 0 6px;background:#0b0b14;border:1px solid rgba(232,232,240,.08);overflow:hidden}
+.respaldo-barra i{display:block;height:100%;width:2%;background:linear-gradient(90deg,var(--purple),var(--cyan));box-shadow:0 0 10px rgba(0,229,255,.45);transition:width .5s var(--ease)}
+.respaldo-barra i.alto{background:linear-gradient(90deg,#ffb36b,#ff7b90)}
+.respaldo-barra i.critico{background:linear-gradient(90deg,#ff7b90,var(--crimson))}
+.respaldo-medidor__pie{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-family:var(--font-ui);font-size:8.5px;letter-spacing:.8px;color:var(--muted)}
+.respaldo-medidor__pie b{color:var(--plata);font-weight:600}
+.respaldo-datos{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:9px}
+.respaldo-datos div{text-align:center;padding:7px 4px;border:1px solid var(--line);background:rgba(3,3,7,.32);clip-path:var(--clip-sm)}
+.respaldo-datos b{display:block;font-family:var(--font-ui);font-size:16px;line-height:1.1;color:var(--plata)}
+.respaldo-datos span{font-family:var(--font-ui);font-size:7.5px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted)}
+.respaldo-fila{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+/* ══════════════ INSPIRACIÓN Y GALERÍA ══════════════ */
+.inspiracion-grid{display:grid;grid-template-columns:1fr;gap:12px}
+.inspiracion-retrato{display:flex;flex-direction:column;gap:9px}
+.retrato-marco{position:relative;aspect-ratio:3/4;max-height:520px;overflow:hidden;border:1px solid var(--line);background:radial-gradient(ellipse at 50% 20%,rgba(123,43,255,.25),rgba(5,5,8,.95));clip-path:var(--clip-md)}
+.retrato-img{width:100%;height:100%;object-fit:cover;object-position:center 16%;filter:contrast(1.08) saturate(.92)}
+.retrato-marco::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(5,5,8,0) 45%,rgba(5,5,8,.88) 100%);pointer-events:none}
+.retrato-scan{position:absolute;left:0;right:0;top:-20%;height:18%;background:linear-gradient(180deg,transparent,rgba(0,229,255,.16),transparent);animation:barrido 7s linear infinite;z-index:2;pointer-events:none}
+.retrato-chip{position:absolute;left:9px;bottom:9px;z-index:3;padding:3px 7px;border-left:2px solid var(--cyan);background:rgba(5,5,8,.7);font-family:var(--font-ui);font-size:8px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:var(--muted)}
+.retrato-estado{font-family:var(--font-ui);font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--cyan)}
+.retrato-acciones{display:flex;flex-wrap:wrap;gap:7px}
+.inspiracion-nota{font-size:9.5px;color:var(--muted);line-height:1.55;margin-top:8px}
+.inspiracion-lado{display:flex;flex-direction:column;gap:12px}
+.inspiracion-cita{display:flex;flex-direction:column;gap:5px;background:linear-gradient(150deg,rgba(123,43,255,.16),rgba(7,7,13,.92))}
+.inspiracion-cita blockquote{margin:2px 0 0;font-family:var(--font-ui);font-size:15px;font-weight:600;line-height:1.45;color:var(--plata)}
+.inspiracion-cita span{font-family:var(--font-ui);font-size:9px;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted)}
+.recurso-card{display:grid;grid-template-columns:88px 1fr;gap:12px;align-items:start;overflow:hidden}
+.recurso-media{position:relative;border:1px solid var(--line);overflow:hidden;clip-path:var(--clip-sm);background:#0a0a12;aspect-ratio:1}
+.recurso-media img{width:100%;height:100%;object-fit:cover}
+.recurso-media--nelson img{object-position:center 18%}
+.recurso-media--iron img{object-fit:contain;padding:4px;background:radial-gradient(circle at 50% 45%,rgba(200,30,60,.2),rgba(5,5,8,.95) 70%)}
+.recurso-cuerpo{min-width:0}
+.recurso-cuerpo h3{font-family:var(--font-display);font-size:15px;font-weight:900;letter-spacing:1.2px;text-transform:uppercase;margin-top:3px}
+.recurso-cuerpo p{font-size:11px;color:var(--muted);line-height:1.55;margin-top:3px}
+.recurso-cuerpo p em{color:#c9b8ff;font-style:normal}
+.recurso-links{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.recurso-dato{font-family:var(--font-ui);font-size:8.5px;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+.darkmode-panel{margin-top:12px}
+.darkmode-grid{display:grid;gap:12px}
+.darkmode-portada{max-width:230px;width:100%;margin:0 auto;border:1px solid var(--line);background:#0a0a12;clip-path:var(--clip-md);box-shadow:0 14px 40px rgba(0,0,0,.45)}
+.darkmode-portada img{width:100%;height:auto;display:block}
+.darkmode-cuerpo h3{font-family:var(--font-display);font-size:clamp(16px,4vw,21px);font-weight:900;letter-spacing:1.1px;text-transform:uppercase;line-height:1.2;margin-top:4px}
+.darkmode-cuerpo > p{font-size:12px;color:var(--muted);line-height:1.6;margin-top:5px;max-width:58ch}
+.darkmode-puntos{list-style:none;margin:9px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+.darkmode-puntos li{display:flex;gap:8px;font-size:11.5px;color:var(--muted);line-height:1.5}
+.darkmode-puntos li::before{content:'▸';color:var(--cyan);flex:none}
+.galeria-panel{margin-top:12px}
+.galeria-barra{display:flex;flex-direction:column;gap:8px;margin-bottom:11px}
+.galeria-filtros{margin:0}
+.galeria-subir{display:flex;gap:7px;align-items:stretch}
+.galeria-subir select{flex:1;min-width:0;min-height:34px;background:#0a0a12;border:1px solid var(--line);color:var(--plata);font-family:var(--font-ui);font-size:10px;letter-spacing:1px;padding:0 9px;clip-path:var(--clip-sm)}
+.galeria-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.galeria-card{display:flex;flex-direction:column;border:1px solid var(--line);background:linear-gradient(155deg,rgba(15,15,26,.9),rgba(7,7,13,.92));clip-path:var(--clip-md);overflow:hidden}
+.galeria-card.es-retrato{border-color:rgba(0,229,255,.5);box-shadow:0 0 18px rgba(0,229,255,.12)}
+.galeria-card__media{position:relative;display:block;width:100%;aspect-ratio:4/3;padding:0;border:0;background:#0a0a12;cursor:zoom-in;overflow:hidden}
+.galeria-card__media img{width:100%;height:100%;object-fit:cover;transition:transform .3s,filter .3s}
+.galeria-card__media:hover img{transform:scale(1.05);filter:brightness(1.08)}
+.galeria-card__tag{position:absolute;left:6px;top:6px;padding:2px 5px;background:rgba(5,5,8,.85);border:1px solid rgba(0,229,255,.35);font-family:var(--font-ui);font-size:7.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#a9f5ff;z-index:2}
+.galeria-card__retrato{position:absolute;right:6px;top:6px;padding:2px 5px;background:rgba(0,229,255,.9);color:#031018;font-family:var(--font-ui);font-size:7px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;z-index:2}
+.galeria-card__pie{display:flex;align-items:center;gap:6px;padding:7px 8px;border-top:1px solid var(--line)}
+.galeria-card__texto{min-width:0;flex:1}
+.galeria-card__texto strong{display:block;font-family:var(--font-ui);font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--plata)}
+.galeria-card__texto small{display:block;font-size:7.5px;letter-spacing:.6px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.galeria-card__acciones{display:flex;gap:4px;flex:none}
+.galeria-mini{width:26px;height:26px;display:grid;place-items:center;border:1px solid var(--line);background:rgba(3,3,7,.5);color:var(--muted);cursor:pointer;clip-path:var(--clip-sm);transition:.2s}
+.galeria-mini:hover{color:var(--cyan);border-color:rgba(0,229,255,.55);background:rgba(0,229,255,.08)}
+.galeria-mini--peligro:hover{color:#ff9bac;border-color:rgba(200,30,60,.6);background:rgba(200,30,60,.1)}
+.galeria-mini svg{width:13px;height:13px}
+.lightbox-marco{display:grid;place-items:center;max-height:60vh;overflow:hidden;border:1px solid var(--line);background:#030306;clip-path:var(--clip-sm)}
+.lightbox-marco img{max-width:100%;max-height:60vh;object-fit:contain}
+.lightbox-etiqueta{font-family:var(--font-ui);font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-top:8px}
+.modal__panel--imagen{max-width:640px}
+body.hc .galeria-card,body.hc .retrato-marco,body.hc .recurso-media{border-color:rgba(255,255,255,.32)}
+
+/* ══════════════ ALTO CONTRASTE ══════════════ */
+body.hc{
+  --bg:#000;
+  --bg-2:#000;
+  --panel:rgba(17,17,28,.97);
+  --panel-solid:#111119;
+  --line:rgba(255,255,255,.32);
+  --line-strong:rgba(255,255,255,.55);
+  --plata:#ffffff;
+  --muted:#d2d2e4;
+  --purple:#a273ff;
+  --cyan:#5cf3ff;
+}
+body.hc .bg-fondo{opacity:.1}
+body.hc .bg-grid{opacity:.28}
+body.hc .bg-scan{opacity:.2}
+body.hc .panel,body.hc .view-head,body.hc .quick,body.hc .stat{border-color:rgba(255,255,255,.32)}
+body.hc .nota-card{border-color:rgba(162,115,255,.5)}
+body.hc .hero__frase{color:#fff}
+body.hc .vacio{color:#d2d2e4;border-color:rgba(255,255,255,.3)}
+
+/* ══════════════ ANIMACIONES / UTILIDADES ══════════════ */
+@keyframes giro{to{transform:rotate(360deg)}}
+@keyframes giroReves{to{transform:rotate(-360deg)}}
+@keyframes pulso{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.8)}}
+@keyframes pulsoNucleo{0%,100%{opacity:.85}50%{opacity:.4}}
+@keyframes parpadeo{0%,100%{opacity:1}50%{opacity:.45}}
+@keyframes fundido{from{opacity:0}to{opacity:1}}
+@keyframes modalIn{from{opacity:0;transform:translateY(16px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes toastIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* Boot terminal */
+.boot{
+  position:fixed;inset:0;z-index:1000;display:grid;place-items:center;
+  padding:24px;background:#050508;transition:opacity .55s,visibility .55s;
+}
+.boot.done{opacity:0;visibility:hidden;pointer-events:none}
+.boot__caja{width:min(460px,100%)}
+.boot__marca{
+  font-family:var(--font-display);font-size:clamp(22px,6vw,34px);font-weight:900;
+  letter-spacing:3px;color:var(--plata);margin-bottom:4px;white-space:nowrap;
+}
+.boot__marca span{color:var(--purple)}
+.boot__sub{
+  font-family:var(--font-ui);font-size:8px;font-weight:700;letter-spacing:3px;
+  text-transform:uppercase;color:var(--cyan);margin-bottom:24px;
+  animation:parpadeo 1.8s infinite;
+}
+.boot__lineas{display:flex;flex-direction:column;gap:6px;min-height:120px}
+.boot__lineas p{
+  font-family:Consolas,Monaco,monospace;font-size:11px;color:#8f8fae;
+  opacity:0;transform:translateX(-6px);animation:lineaBoot .35s forwards;
+}
+.boot__lineas p b{color:var(--ok);font-weight:400}
+.boot__lineas p.sangre b{color:#ff7b90}
+.boot__lineas p:nth-child(1){animation-delay:.12s}
+.boot__lineas p:nth-child(2){animation-delay:.45s}
+.boot__lineas p:nth-child(3){animation-delay:.78s}
+.boot__lineas p:nth-child(4){animation-delay:1.12s}
+.boot__lineas p:nth-child(5){animation-delay:1.45s;color:var(--cyan)}
+.boot__lineas .cursor{animation:parpadeo 1s steps(1) infinite}
+@keyframes lineaBoot{to{opacity:1;transform:translateX(0)}}
+.boot__barra{height:3px;background:#11111c;margin-top:18px;overflow:hidden}
+.boot__barra i{display:block;height:100%;width:100%;background:linear-gradient(90deg,var(--purple),var(--cyan));transform-origin:left;animation:barraBoot 2.3s var(--ease) forwards}
+@keyframes barraBoot{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.boot__hint{margin-top:12px;text-align:center;font-family:var(--font-ui);font-size:8px;letter-spacing:1.6px;text-transform:uppercase;color:#55556b}
+
+/* ══════════════ RESPONSIVE ══════════════ */
+@media(min-width:520px){
+  main{padding-inline:18px}
+  .notas-grid{grid-template-columns:repeat(2,1fr)}
+  .metas-grid{grid-template-columns:repeat(2,1fr)}
+  .stat-grid{grid-template-columns:repeat(4,1fr)}
+  .notas-barra{flex-direction:row;align-items:center}
+}
+@media(min-width:720px){
+  .quick-grid{grid-template-columns:repeat(4,1fr)}
+  .hero{grid-template-columns:1.35fr .65fr}
+  .hero__contenido{padding:26px 24px;min-height:320px}
+  .hero__retrato{min-height:320px;border-top:0;border-left:1px solid var(--line)}
+  .hero__fallback svg{max-height:350px}
+  .dash-grid{grid-template-columns:1.05fr .95fr}
+  .inspiracion-grid{grid-template-columns:1.1fr .9fr;align-items:start}
+  .darkmode-grid{grid-template-columns:230px 1fr;align-items:center}
+  .galeria-barra{flex-direction:row;align-items:center;justify-content:space-between}
+  .galeria-grid{grid-template-columns:repeat(3,1fr)}
+  .pomo-grid{grid-template-columns:1.1fr .9fr}
+  .config-grid{gap:10px}
+  .modal{padding:20px}
+}
+@media(min-width:900px){
+  :root{--header-h:66px}
+  .sidebar{display:flex}
+  .bottomnav{display:none}
+  .desktop-only{display:grid!important}
+  main{
+    padding:calc(var(--header-h) + env(safe-area-inset-top) + 26px) 30px 40px calc(232px + 30px);
+  }
+  .view{max-width:1320px;margin:0 auto}
+  .topbar{padding-inline:22px}
+  .marca h1{font-size:13px}
+  .reloj strong{font-size:19px}
+  .toasts{bottom:22px;left:auto;right:22px;transform:none}
+  .view-head{padding:22px 24px}
+  .panel{padding:20px}
+  .hero__contenido{padding:30px 30px}
+  .quick{min-height:118px;padding:15px}
+  .quick__valor{font-size:24px}
+  .notas-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(min-width:1120px){
+  .notas-grid{grid-template-columns:repeat(3,1fr)}
+  .metas-grid{grid-template-columns:repeat(2,1fr);gap:14px}
+  .timeline-panel{margin-top:14px}
+  .galeria-grid{grid-template-columns:repeat(4,1fr)}
+}
+@media(max-width:380px){
+  .marca h1{font-size:10px;letter-spacing:1px}
+  .marca p{display:none}
+  .reloj{min-width:56px}
+  .reloj strong{font-size:15px}
+  .reloj span{display:none}
+  .racha-chip{padding:0 6px}
+  .racha-chip small{display:none}
+  .quick__valor{font-size:19px}
+  .bottomnav button{font-size:7px;letter-spacing:0}
+  .bottomnav button svg{width:17px;height:17px}
+  .galeria-grid{grid-template-columns:1fr}
+}
+@media(max-width:600px){
+  .modal{align-items:flex-end;padding:0}
+  .modal__panel{max-height:94dvh;border-left:0;border-right:0;border-bottom:0;padding:16px}
+  .modal__panel--sm{margin:0 10px 10px;border:1px solid rgba(123,43,255,.42)}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
+  .boot{display:none}
+}
+
+</style>
+</head>
+<body>
+<!-- Capas decorativas de fondo -->
+<div class="bg-fondo" id="bgFondo" aria-hidden="true"></div>
+<div class="bg-grid" aria-hidden="true"></div>
+<div class="bg-scan" aria-hidden="true"></div>
+<div class="bg-ruido" aria-hidden="true"></div>
+
+<!-- Pantalla de arranque tipo terminal -->
+<div class="boot" id="boot">
+  <div class="boot__caja">
+    <div class="boot__marca">ARIFURETA<span>//</span>HUD</div>
+    <div class="boot__sub">Sistema de forja personal · v1.0</div>
+    <div class="boot__lineas">
+      <p>[ <b>OK</b> ] Núcleo de energía en línea</p>
+      <p>[ <b>OK</b> ] Sincronización de datos locales</p>
+      <p>[ <b>OK</b> ] Protocolo de enfoque cargado</p>
+      <p>[ <b>OK</b> ] Libreta neón montada</p>
+      <p>&gt; Forjando interfaz<span class="cursor">_</span></p>
+    </div>
+    <div class="boot__barra"><i></i></div>
+    <p class="boot__hint">Toca para omitir</p>
+  </div>
+</div>
+
+<!-- Barra superior -->
+<header class="topbar">
+  <div class="marca">
+    <div class="logo" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 2l8.5 5v10L12 22l-8.5-5V7L12 2z" stroke="#00e5ff" stroke-width="1.2"/><path d="M8 16l4-9 4 9M9.6 13.2h4.8" stroke="#e8e8f0" stroke-width="1.4" stroke-linecap="round"/></svg>
+    </div>
+    <div class="marca__texto">
+      <h1>ARIFURETA<em>//</em>HUD</h1>
+      <p>Forjado en el abismo</p>
+    </div>
+  </div>
+  <div class="topbar__datos">
+    <div class="reloj">
+      <strong id="reloj">--:--:--</strong>
+      <span id="fecha">Cargando…</span>
+    </div>
+    <div class="racha-chip" title="Racha de días usando el sistema">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c1 4-3 5-3 9a3 3 0 006 0c0-1.5-.6-2.2-.6-2.2S17 11 17 14a5 5 0 01-10 0c0-6 5-7 5-12z"/></svg>
+      <b id="rachaVal">0</b><small>días</small>
+    </div>
+    <button class="icon-btn" id="btnContraste" data-action="contraste" aria-pressed="false" aria-label="Alternar alto contraste" title="Alto contraste">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4" stroke-linecap="round"/></svg>
+    </button>
+    <button class="icon-btn desktop-only" data-action="exportar" aria-label="Exportar todos los datos" title="Exportar todo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v3h16v-3"/></svg>
+    </button>
+    <button class="icon-btn desktop-only" data-action="importar" aria-label="Importar respaldo" title="Importar respaldo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 0L8 7m4-4l4 4M4 17v3h16v-3"/></svg>
+    </button>
+  </div>
+</header>
+
+<!-- Navegación lateral de escritorio -->
+<aside class="sidebar" aria-label="Navegación principal">
+  <div>
+    <p class="sidebar__label">// Módulos del sistema</p>
+    <nav class="sidebar__nav">
+      <button class="navlink" data-nav="dashboard" data-action="nav">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 10.5L12 3l9 7.5V21H3z"/><path d="M9 21v-7h6v7"/></svg>
+        <span>Núcleo</span><span class="idx">01</span>
+      </button>
+      <button class="navlink" data-nav="pomodoro" data-action="nav">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6M12 2v3" stroke-linecap="round"/></svg>
+        <span>Pomodoro</span><span class="idx">02</span>
+      </button>
+      <button class="navlink" data-nav="cronometro" data-action="nav">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 9.5v4.5l3 2M9.5 2.5h5M12 2.5V6M18.5 7l1.5-1.5" stroke-linecap="round"/></svg>
+        <span>Cronómetro</span><span class="idx">03</span>
+      </button>
+      <button class="navlink" data-nav="notas" data-action="nav">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M5 3h11l4 4v14H5z"/><path d="M16 3v5h4M9 12h7M9 16h7M9 8h3" stroke-linecap="round"/></svg>
+        <span>Libreta</span><span class="idx">04</span>
+      </button>
+      <button class="navlink" data-nav="metas" data-action="nav">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/><path d="M12 1v4M12 19v4M1 12h4M19 12h4" stroke-linecap="round"/></svg>
+        <span>Metas</span><span class="idx">05</span>
+      </button>
+      <button class="navlink" data-nav="inspiracion" data-action="nav">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" stroke-linejoin="round"/><path d="M18.5 15l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z" stroke-linejoin="round"/></svg>
+        <span>Inspiración</span><span class="idx">06</span>
+      </button>
+    </nav>
+  </div>
+  <div class="sidebar__pie">
+    <span class="linea"><i class="pulso"></i> Sistema en línea</span>
+    <small id="lateralSesiones">0 sesiones hoy</small>
+    <small>Datos guardados localmente</small>
+  </div>
+</aside>
+
+<main id="main">
+
+  <!-- ══════════════ VISTA: DASHBOARD ══════════════ -->
+  <section class="view active" id="view-dashboard" aria-labelledby="saludo">
+    <div class="hero panel">
+      <div class="hero__contenido">
+        <p class="eyebrow">// Terminal personal · operador</p>
+        <h2 id="saludo">Buenos días<span>.</span></h2>
+        <p class="hero__frase" id="frase">«El mundo no se detiene. Tú tampoco.»</p>
+        <div class="hero__chips">
+          <span class="chip chip--cian"><strong id="heroSesiones">0</strong> sesiones hoy</span>
+          <span class="chip">Racha <strong id="heroRacha">0</strong> días</span>
+          <span class="chip">Sistema <strong>estable</strong></span>
+        </div>
+        <div class="hero__acciones">
+          <button class="btn" data-action="nav" data-view="pomodoro">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 5l11 7-11 7V5z" stroke-linejoin="round"/></svg>
+            Iniciar enfoque
+          </button>
+          <button class="btn btn--fantasma" data-action="nav" data-view="metas">Ver metas</button>
+        </div>
+      </div>
+      <div class="hero__retrato">
+        <div class="hero__fallback" id="hajimeFallback">
+          <svg viewBox="0 0 320 420" preserveAspectRatio="xMidYMax meet" aria-hidden="true">
+            <defs>
+              <linearGradient id="hHair" x1="0" y1="0" x2=".2" y2="1"><stop offset="0" stop-color="#f4f4fb"/><stop offset=".55" stop-color="#b9b9cd"/><stop offset="1" stop-color="#4b4b63"/></linearGradient>
+              <linearGradient id="hCoat" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1a1426"/><stop offset=".6" stop-color="#0a0912"/><stop offset="1" stop-color="#040407"/></linearGradient>
+              <linearGradient id="hSkin" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#d9c7c0"/><stop offset="1" stop-color="#8c7a78"/></linearGradient>
+              <radialGradient id="hAura"><stop stop-color="#7b2bff" stop-opacity=".4"/><stop offset="1" stop-color="#7b2bff" stop-opacity="0"/></radialGradient>
+            </defs>
+            <circle cx="160" cy="210" r="190" fill="url(#hAura)"/>
+            <circle cx="160" cy="205" r="150" fill="none" stroke="#00e5ff" stroke-opacity=".16" stroke-dasharray="2 12"/>
+            <circle cx="160" cy="205" r="120" fill="none" stroke="#7b2bff" stroke-opacity=".25"/>
+            <path d="M226 300 L286 214" stroke="#c81e3c" stroke-opacity=".45" stroke-width="2" stroke-dasharray="4 6"/>
+            <circle cx="286" cy="214" r="4" fill="#c81e3c" opacity=".8"/>
+            <path d="M160 235 C120 235 84 275 70 420 L250 420 C236 275 200 235 160 235 Z" fill="url(#hCoat)" stroke="#7b2bff" stroke-opacity=".45" stroke-width="1.5"/>
+            <path d="M120 258 L160 320 L200 258 L212 282 L160 350 L108 282 Z" fill="#07070c" stroke="#00e5ff" stroke-opacity=".22"/>
+            <path d="M143 215 h34 v48 h-34 z" fill="#6f5f60"/>
+            <ellipse cx="160" cy="168" rx="47" ry="56" fill="url(#hSkin)"/>
+            <path d="M110 170 C104 120 128 88 160 88 C196 88 220 120 212 174 L206 152 L200 178 L190 150 L184 176 L172 148 L164 174 L154 146 L146 176 L136 150 L128 178 L120 152 Z" fill="url(#hHair)"/>
+            <path d="M116 160 L132 128 L140 150 L154 118 L160 146 L176 112 L180 146 L196 124 L200 156 L188 138 L182 162 L164 140 L156 166 L140 144 L130 168 Z" fill="url(#hHair)"/>
+            <path d="M136 168 q8 -6 16 0" stroke="#00e5ff" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <path d="M172 168 q8 -6 16 0" stroke="#00e5ff" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <circle cx="144" cy="169" r="1.8" fill="#fff"/><circle cx="180" cy="169" r="1.8" fill="#fff"/>
+            <path d="M152 192 q8 4 16 0" stroke="#5d4a4e" stroke-width="2" fill="none" stroke-linecap="round"/>
+            <text x="160" y="404" text-anchor="middle" font-family="Orbitron, sans-serif" font-size="9" letter-spacing="4" fill="#8b8ba3">H A J I M E // 0 0 1</text>
+          </svg>
+        </div>
+        <img class="hero__img" id="hajimeImg" alt="Retrato de Hajime Nagumo" hidden>
+        <span class="hero__etiqueta">Sujeto 001 // Hajime</span>
+      </div>
+    </div>
+
+    <div class="quick-grid">
+      <button class="quick" data-action="nav" data-view="pomodoro">
+        <span class="quick__label">Pomodoro
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6" stroke-linecap="round"/></svg>
+        </span>
+        <span class="quick__valor" id="dashPomoValor">--:--</span>
+        <span class="quick__meta" id="dashPomoMeta">Sin sesión activa</span>
+      </button>
+      <button class="quick" data-action="nav" data-view="metas">
+        <span class="quick__label">Próxima meta
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke-linecap="round"/></svg>
+        </span>
+        <span class="quick__valor quick__valor--sm" id="dashMetaValor">Sin meta activa</span>
+        <span class="quick__meta" id="dashMetaInfo">Define tu próxima misión</span>
+      </button>
+      <button class="quick" data-action="nav" data-view="cronometro">
+        <span class="quick__label">Cronómetro
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 9.5v4.5l3 2M9.5 2.5h5" stroke-linecap="round"/></svg>
+        </span>
+        <span class="quick__valor" id="dashCronoValor">00:00.00</span>
+        <span class="quick__meta" id="dashCronoMeta">Detenido</span>
+      </button>
+      <button class="quick" data-action="nav" data-view="notas">
+        <span class="quick__label">Libreta
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 3h11l4 4v14H5z"/><path d="M16 3v5h4M9 12h7M9 16h5" stroke-linecap="round"/></svg>
+        </span>
+        <span class="quick__valor" id="dashNotasValor">0</span>
+        <span class="quick__meta">registros en la libreta</span>
+      </button>
+    </div>
+
+    <div class="dash-grid">
+      <div class="panel panel--media">
+        <img class="media-bg" id="arcBg" alt="" aria-hidden="true" hidden>
+        <div class="panel__head">
+          <span class="panel__titulo">Núcleo de productividad</span>
+          <span class="panel__sub">// hoy</span>
+        </div>
+        <div class="reactor">
+          <svg viewBox="0 0 200 200" aria-hidden="true">
+            <defs>
+              <radialGradient id="arcCore"><stop offset="0" stop-color="#ffffff"/><stop offset=".3" stop-color="#9df6ff"/><stop offset=".65" stop-color="#00e5ff" stop-opacity=".5"/><stop offset="1" stop-color="#00e5ff" stop-opacity="0"/></radialGradient>
+              <linearGradient id="arcLine" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#7b2bff"/><stop offset="1" stop-color="#00e5ff"/></linearGradient>
+            </defs>
+            <circle cx="100" cy="100" r="92" fill="none" stroke="rgba(123,43,255,.25)" stroke-width="1"/>
+            <g class="reactor__anillo-giro">
+              <circle cx="100" cy="100" r="84" fill="none" stroke="rgba(0,229,255,.28)" stroke-width="1" stroke-dasharray="2 9"/>
+            </g>
+            <g class="reactor__anillo-giro--reves">
+              <circle cx="100" cy="100" r="78" fill="none" stroke="rgba(232,232,240,.12)" stroke-width="5" stroke-dasharray="1 17"/>
+            </g>
+            <circle cx="100" cy="100" r="74" fill="none" stroke="rgba(232,232,240,.09)" stroke-width="7"/>
+            <circle id="arcRing" cx="100" cy="100" r="74" fill="none" stroke="url(#arcLine)" stroke-width="4" stroke-linecap="round" transform="rotate(-90 100 100)"/>
+            <circle cx="100" cy="100" r="60" fill="none" stroke="rgba(0,229,255,.22)" stroke-width="1"/>
+            <circle class="reactor__nucleo" cx="100" cy="100" r="38" fill="url(#arcCore)"/>
+            <circle cx="100" cy="100" r="21" fill="#050508" stroke="#00e5ff" stroke-opacity=".65" stroke-width="1.5"/>
+            <circle cx="100" cy="100" r="12" fill="none" stroke="#00e5ff" stroke-width="2" stroke-dasharray="3 4"/>
+            <path d="M100 62v8M100 130v8M62 100h8M130 100h8" stroke="#9df6ff" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          <div class="reactor__centro">
+            <div class="reactor__pct"><span id="arcPct">0</span><small>%</small></div>
+            <div class="reactor__estado" id="arcEstado">Núcleo inestable</div>
+          </div>
+        </div>
+        <div class="arc-desglose">
+          <div><b id="arcSesiones">0</b><span>Sesiones</span></div>
+          <div><b id="arcMetas">0%</b><span>Metas</span></div>
+          <div><b id="arcRacha">0</b><span>Racha</span></div>
+        </div>
+      </div>
+
+      <div class="panel respaldo-panel">
+        <div class="panel__head">
+          <span class="panel__titulo">Protocolo de respaldo</span>
+          <span class="panel__sub">// local</span>
+        </div>
+
+        <div class="respaldo-medidor">
+          <div class="respaldo-medidor__top">
+            <span>Memoria del dispositivo</span>
+            <b id="respaldoPct">0%</b>
+          </div>
+          <div class="respaldo-barra"><i id="respaldoBarra"></i></div>
+          <div class="respaldo-medidor__pie">
+            <span id="respaldoUsado">0 B de 5 MB</span>
+            <span>Último respaldo: <b id="respaldoUltimo">Nunca</b></span>
+          </div>
+        </div>
+
+        <div class="respaldo-datos">
+          <div><b id="respaldoNotas">0</b><span>Notas</span></div>
+          <div><b id="respaldoMetas">0</b><span>Metas</span></div>
+          <div><b id="respaldoFotos">0</b><span>Fotos</span></div>
+        </div>
+
+        <div class="respaldo-acciones">
+          <button class="btn btn--cian btn--bloque" data-action="exportar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v3h16v-3"/></svg>
+            Exportar JSON completo
+          </button>
+          <div class="respaldo-fila">
+            <button class="btn btn--fantasma" data-action="importar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 0L8 7m4-4l4 4M4 17v3h16v-3"/></svg>
+              Importar
+            </button>
+            <button class="btn btn--fantasma" data-action="copiar-respaldo">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="1"/><path d="M5 15H3V3h12v2"/></svg>
+              Copiar
+            </button>
+          </div>
+        </div>
+
+        <p class="respaldo-nota">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" stroke-linecap="round"/></svg>
+          <span>Incluye notas, metas, sesiones, tu retrato y la galería. Sin servidores: todo vive en este navegador.</span>
+        </p>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:12px">
+      <div class="panel__head">
+        <span class="panel__titulo">Registro reciente</span>
+        <button class="btn btn--sm btn--fantasma" data-action="nav" data-view="notas">Abrir libreta</button>
+      </div>
+      <div class="notas-recientes" id="dashNotasRecientes"></div>
+    </div>
+
+    <p class="pie-app">Arifureta HUD // datos locales // forjado para no rendirse</p>
+  </section>
+  <!-- ══════════════ VISTA: POMODORO ══════════════ -->
+  <section class="view" id="view-pomodoro" aria-labelledby="tituloPomodoro">
+    <div class="view-head" data-banner="pomodoro">
+      <div class="view-head__fila">
+        <div>
+          <p class="eyebrow">// módulo 02</p>
+          <h2 id="tituloPomodoro">Protocolo de <em>enfoque</em></h2>
+          <p>Veinticinco minutos de guerra. Cinco de tregua. Cada sesión es un paso fuera del abismo.</p>
+        </div>
+        <div class="view-head__icono" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6M12 2v3" stroke-linecap="round"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="pomo-grid">
+      <div class="panel">
+        <div class="pomo-modos" role="group" aria-label="Modo de temporizador">
+          <button class="modo-btn active" data-modo="focus" data-action="pomo-modo" aria-pressed="true">Enfoque</button>
+          <button class="modo-btn" data-modo="short" data-action="pomo-modo" aria-pressed="false">Descanso corto</button>
+          <button class="modo-btn" data-modo="long" data-action="pomo-modo" aria-pressed="false">Descanso largo</button>
+        </div>
+
+        <div class="pomo-esfera">
+          <svg viewBox="0 0 220 220" aria-hidden="true">
+            <circle cx="110" cy="110" r="104" fill="none" stroke="rgba(123,43,255,.22)" stroke-width="1" stroke-dasharray="2 8"/>
+            <circle cx="110" cy="110" r="96" fill="none" stroke="rgba(232,232,240,.08)" stroke-width="7"/>
+            <circle id="pomoRing" cx="110" cy="110" r="96" fill="none" stroke="#00e5ff" stroke-width="4" stroke-linecap="round" style="filter:drop-shadow(0 0 7px rgba(0,229,255,.7))"/>
+            <circle cx="110" cy="110" r="84" fill="none" stroke="rgba(0,229,255,.12)" stroke-width="1"/>
+            <path d="M110 6v7M110 207v7M6 110h7M207 110h7" stroke="rgba(0,229,255,.45)" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          <div class="pomo-esfera__centro">
+            <div class="pomo-tiempo" id="pomoTiempo">25:00</div>
+            <div class="pomo-estado" id="pomoEstado">Listo para el combate</div>
+            <div class="pomo-ciclo" id="pomoCiclo">Ciclo 0 de 4</div>
+          </div>
+        </div>
+
+        <div class="pomo-controles">
+          <button class="btn btn--cian" id="btnPomoToggle" data-action="pomo-toggle">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 5l11 7-11 7V5z" stroke-linejoin="round"/></svg>
+            Iniciar
+          </button>
+          <button class="btn btn--fantasma" data-action="pomo-reset" aria-label="Reiniciar temporizador">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4v6h6M20 20v-6h-6"/><path d="M5.5 15a7.5 7.5 0 0013-4M18.5 9a7.5 7.5 0 00-13-4"/></svg>
+            Reiniciar
+          </button>
+        </div>
+
+        <div class="sesiones-resumen">
+          <div>
+            <div class="sesiones-resumen__num" id="pomoSesiones">0</div>
+            <div class="sesiones-resumen__txt">Sesiones hoy</div>
+          </div>
+          <div class="puntos-ciclo" id="puntosCiclo" aria-hidden="true">
+            <i></i><i></i><i></i><i></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel__head">
+          <span class="panel__titulo">Calibración</span>
+          <span class="panel__sub">// minutos</span>
+        </div>
+        <div class="config-grid">
+          <label class="field"><span>Enfoque</span><input type="number" id="pomoWork" min="1" max="180" inputmode="numeric" value="25" aria-label="Minutos de enfoque"></label>
+          <label class="field"><span>Corto</span><input type="number" id="pomoShort" min="1" max="60" inputmode="numeric" value="5" aria-label="Minutos de descanso corto"></label>
+          <label class="field"><span>Largo</span><input type="number" id="pomoLong" min="1" max="90" inputmode="numeric" value="15" aria-label="Minutos de descanso largo"></label>
+        </div>
+        <p style="font-size:10px;color:var(--muted);margin-top:6px">Se guardan al cambiar. Los cambios se aplican al reiniciar.</p>
+
+        <div class="interruptor">
+          <span>Sonido al completar</span>
+          <label class="switch">
+            <input type="checkbox" id="switchSonido" checked aria-label="Activar sonido al completar">
+            <span aria-hidden="true"></span>
+          </label>
+        </div>
+        <button class="btn btn--sm btn--fantasma" data-action="probar-sonido" style="margin-top:8px;width:100%">Probar sonido del núcleo</button>
+
+        <div class="panel__head" style="margin-top:16px">
+          <span class="panel__titulo">Reglas del protocolo</span>
+        </div>
+        <ul class="protocolo-lista">
+          <li>Enfoque total: sin móvil, sin ruido, sin excusas.</li>
+          <li>Cada cuatro sesiones, un descanso largo.</li>
+          <li>Si el mundo no se detiene, tú tampoco.</li>
+          <li>Las sesiones se reinician a medianoche.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════ VISTA: CRONÓMETRO ══════════════ -->
+  <section class="view" id="view-cronometro" aria-labelledby="tituloCrono">
+    <div class="view-head" data-banner="cronometro">
+      <div class="view-head__fila">
+        <div>
+          <p class="eyebrow">// módulo 03</p>
+          <h2 id="tituloCrono">Cronómetro de <em>precisión</em></h2>
+          <p>Mide cada segundo de la batalla. Registra vueltas, conserva el tiempo aunque cierres el navegador.</p>
+        </div>
+        <div class="view-head__icono" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 9.5v4.5l3 2M9.5 2.5h5M12 2.5V6M18.5 7l1.5-1.5" stroke-linecap="round"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel crono-panel">
+      <p class="eyebrow" style="margin-bottom:7px">// tiempo transcurrido</p>
+      <div class="crono-display" id="cronoDisplay">00:00<span class="ms">.00</span></div>
+      <div class="crono-estado" id="cronoEstado">Sistema detenido</div>
+
+      <div class="crono-controles">
+        <button class="btn btn--cian" id="btnCrono" data-action="crono-toggle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 5l11 7-11 7V5z" stroke-linejoin="round"/></svg>
+          Iniciar
+        </button>
+        <button class="btn" data-action="crono-vuelta" id="btnVuelta" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4v6h6M20 20v-6h-6"/><path d="M5.5 15a7.5 7.5 0 0013-4M18.5 9a7.5 7.5 0 00-13-4"/></svg>
+          Vuelta
+        </button>
+        <button class="btn btn--fantasma" data-action="crono-reset">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 12a9 9 0 109-9 9 9 0 00-7 3.4M3 4v5h5"/></svg>
+          Reiniciar
+        </button>
+      </div>
+
+      <div class="crono-info">
+        <span>Vueltas <b id="cronoVueltas">0</b></span>
+        <span>Última <b id="cronoUltima">—</b></span>
+        <span>Sesión <b id="cronoSesion">#001</b></span>
+      </div>
+    </div>
+
+    <div class="panel vueltas-panel">
+      <div class="panel__head">
+        <span class="panel__titulo">Registro de vueltas</span>
+        <button class="btn btn--sm btn--fantasma" data-action="exportar-vueltas">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v3h16v-3"/></svg>
+          Exportar .txt
+        </button>
+      </div>
+      <div class="vueltas-cabecera" aria-hidden="true"><span>Vuelta</span><span>Parcial</span><span>Total</span></div>
+      <ul class="lista-vueltas" id="listaVueltas"></ul>
+      <div id="vueltasVacio" class="vacio" style="margin-top:9px">
+        <strong>Sin vueltas registradas</strong>
+        Inicia el cronómetro y pulsa «Vuelta» para marcar un corte.
+      </div>
+    </div>
+  </section>
+  <!-- ══════════════ VISTA: NOTAS ══════════════ -->
+  <section class="view" id="view-notas" aria-labelledby="tituloNotas">
+    <div class="view-head" data-banner="notas">
+      <div class="view-head__fila">
+        <div>
+          <p class="eyebrow">// módulo 04</p>
+          <h2 id="tituloNotas">Libreta <em>neón</em></h2>
+          <p>Ideas, diarios y misiones. Todo se guarda solo, sin botones ni ceremonias.</p>
+        </div>
+        <div class="view-head__icono" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 3h11l4 4v14H5z"/><path d="M16 3v5h4M9 12h7M9 16h7M9 8h3" stroke-linecap="round"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="notas-barra">
+      <div class="buscador">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="M16 16l5 5" stroke-linecap="round"/></svg>
+        <input type="search" id="buscarNotas" placeholder="Buscar por título, texto o etiqueta…" aria-label="Buscar notas">
+      </div>
+      <span class="notas-contador" id="notasContador">0 notas</span>
+      <button class="btn btn--cian" data-action="nota-nueva">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        Nueva nota
+      </button>
+    </div>
+
+    <div class="notas-grid" id="notasGrid"></div>
+    <div class="vacio" id="notasVacio" style="margin-top:10px">
+      <strong>La libreta está en silencio</strong>
+      Crea tu primera nota. Las ideas no esperan a que estés listo.
+    </div>
+  </section>
+
+  <!-- ══════════════ VISTA: METAS ══════════════ -->
+  <section class="view" id="view-metas" aria-labelledby="tituloMetas">
+    <div class="view-head" data-banner="metas">
+      <div class="view-head__fila">
+        <div>
+          <p class="eyebrow">// módulo 05</p>
+          <h2 id="tituloMetas">Plan de <em>metas</em></h2>
+          <p>No esperes. Constrúyete. Define la cima, divide el camino y marca cada hito.</p>
+        </div>
+        <div class="view-head__icono" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/><path d="M12 1v4M12 19v4M1 12h4M19 12h4" stroke-linecap="round"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat">
+        <b id="statActivas">0</b><span>Activas</span><small>en movimiento</small>
+      </div>
+      <div class="stat stat--morado">
+        <b id="statCompletadas">0</b><span>Completadas</span><small>fuera del abismo</small>
+      </div>
+      <div class="stat stat--sangre">
+        <b id="statRiesgo">0</b><span>En riesgo</span><small>requieren acción</small>
+      </div>
+      <div class="stat stat--plata">
+        <b id="statPromedio">0%</b><span>Progreso medio</span><small>de metas activas</small>
+      </div>
+    </div>
+
+    <div class="fila-botones" style="justify-content:space-between;margin-bottom:9px">
+      <div class="filtros" style="margin:0">
+        <button class="filtro active" data-action="meta-filtro" data-filtro="todas">Todas</button>
+        <button class="filtro" data-action="meta-filtro" data-filtro="activas">Activas</button>
+        <button class="filtro" data-action="meta-filtro" data-filtro="completadas">Completadas</button>
+      </div>
+      <button class="btn btn--cian" data-action="meta-nueva">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        Nueva meta
+      </button>
+    </div>
+
+    <div class="metas-grid" id="metasGrid"></div>
+    <div class="vacio" id="metasVacio" style="margin-top:10px">
+      <strong>Sin metas registradas</strong>
+      El mundo no se detiene. Define tu próxima misión y empieza a moverte.
+    </div>
+
+    <div class="panel timeline-panel">
+      <div class="panel__head">
+        <span class="panel__titulo">Ruta de progreso</span>
+        <span class="panel__sub">// línea de tiempo</span>
+      </div>
+      <div class="timeline" id="timeline"></div>
+      <div class="vacio" id="timelineVacio" style="margin-top:9px">
+        <strong>Ruta vacía</strong>
+        Las metas activas aparecerán aquí en orden de fecha límite.
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════ VISTA: INSPIRACIÓN ══════════════ -->
+  <section class="view" id="view-inspiracion" aria-labelledby="tituloInspiracion">
+    <div class="view-head" data-banner="inspiracion">
+      <div class="view-head__fila">
+        <div>
+          <p class="eyebrow">// módulo 06</p>
+          <h2 id="tituloInspiracion">Archivo de <em>inspiración</em></h2>
+          <p>Retratos, mentalidad y referencias visuales. Tu combustible cuando el abismo intenta convencerte de quedarte quieto.</p>
+        </div>
+        <div class="view-head__icono" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" stroke-linejoin="round"/><path d="M18.5 15l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z" stroke-linejoin="round"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="inspiracion-grid">
+      <article class="panel inspiracion-retrato">
+        <div class="panel__head">
+          <span class="panel__titulo">Sujeto 001</span>
+          <span class="panel__sub">// retrato</span>
+        </div>
+        <div class="retrato-marco">
+          <img id="inspiracionRetrato" class="retrato-img" src="img/hajime.webp" alt="Retrato actual del dashboard">
+          <span class="retrato-scan" aria-hidden="true"></span>
+          <span class="retrato-chip">HAJIME // 001</span>
+        </div>
+        <p class="retrato-estado" id="retratoEstado">Imagen incluida en el sistema</p>
+        <div class="retrato-acciones">
+          <button class="btn btn--cian btn--sm" data-action="retrato-subir">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0L8 8m4-4l4 4M4 17v3h16v-3"/></svg>
+            Subir mi foto
+          </button>
+          <button class="btn btn--fantasma btn--sm" id="btnRetratoReset" data-action="retrato-reset" hidden>Usar la del sistema</button>
+        </div>
+        <p class="inspiracion-nota">La imagen se comprime y se guarda solo en este dispositivo. No se sube a ningún servidor.</p>
+      </article>
+
+      <div class="inspiracion-lado">
+        <article class="panel inspiracion-cita">
+          <p class="eyebrow">// frecuencia de combate</p>
+          <blockquote>«No necesito que me salven. Yo soy el que salva.»</blockquote>
+          <span>— Hajime Nagumo</span>
+        </article>
+
+        <article class="panel recurso-card">
+          <div class="recurso-media recurso-media--nelson">
+            <img src="img/nelson-quest.jpg" alt="Nelson Quest" loading="lazy">
+          </div>
+          <div class="recurso-cuerpo">
+            <p class="eyebrow">// mentalidad</p>
+            <h3>Nelson Quest</h3>
+            <p>Creador de <em>Dark Mode</em>. Su trabajo va de recuperar el control, cortar el ruido y construir disciplina real en lugar de motivación vacía.</p>
+            <div class="recurso-links">
+              <a class="btn btn--sm btn--fantasma" href="https://nelsonquest.com/es/" target="_blank" rel="noopener noreferrer">Sitio oficial</a>
+              <a class="btn btn--sm btn--cian" href="https://nelsonquest.com/guide/Dark-Mode-2020-Spanish.pdf" target="_blank" rel="noopener noreferrer">Leer Dark Mode</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel recurso-card">
+          <div class="recurso-media recurso-media--iron">
+            <img src="img/ironman.png" alt="Iron Man" loading="lazy">
+          </div>
+          <div class="recurso-cuerpo">
+            <p class="eyebrow">// ingeniería</p>
+            <h3>Iron Man</h3>
+            <p>La armadura no te hace héroe: la construyes con lo que tienes, la reparas en el camino y la mejoras cada vez que caes.</p>
+            <div class="recurso-links">
+              <span class="recurso-dato">Reactor de arco · núcleo del dashboard</span>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+
+    <div class="panel darkmode-panel">
+      <div class="darkmode-grid">
+        <div class="darkmode-portada">
+          <img src="img/dark-mode-cover-es.png" alt="Portada de Dark Mode en español" loading="lazy">
+        </div>
+        <div class="darkmode-cuerpo">
+          <p class="eyebrow">// recurso · dark mode</p>
+          <h3>El manual para desaparecer del ruido</h3>
+          <p>Una guía directa para identificar distracciones, elegir un objetivo y sostener el trabajo cuando la motivación se apaga. Léela sin interrupciones y aplica una sola cosa hoy.</p>
+          <ul class="darkmode-puntos">
+            <li>Define el objetivo que justifica el modo oscuro.</li>
+            <li>Corta las fuentes de ruido, no solo las notificaciones.</li>
+            <li>Convierte la disciplina en sistema, no en racha.</li>
+          </ul>
+          <div class="recurso-links">
+            <a class="btn btn--cian" href="https://nelsonquest.com/guide/Dark-Mode-2020-Spanish.pdf" target="_blank" rel="noopener noreferrer">PDF en español</a>
+            <a class="btn btn--fantasma" href="https://nelsonquest.com/guide/Dark-Mode-2020-English.pdf" target="_blank" rel="noopener noreferrer">English PDF</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel galeria-panel">
+      <div class="panel__head">
+        <span class="panel__titulo">Galería de inspiración</span>
+        <span class="panel__sub" id="galeriaContador">0 imágenes</span>
+      </div>
+
+      <div class="galeria-barra">
+        <div class="filtros galeria-filtros" role="group" aria-label="Filtrar galería">
+          <button class="filtro active" data-action="galeria-filtro" data-cat="Todas" aria-pressed="true">Todas</button>
+          <button class="filtro" data-action="galeria-filtro" data-cat="Mías" aria-pressed="false">Mías</button>
+          <button class="filtro" data-action="galeria-filtro" data-cat="Nelson Quest" aria-pressed="false">Nelson</button>
+          <button class="filtro" data-action="galeria-filtro" data-cat="Iron Man" aria-pressed="false">Iron Man</button>
+          <button class="filtro" data-action="galeria-filtro" data-cat="Arifureta" aria-pressed="false">Arifureta</button>
+        </div>
+        <div class="galeria-subir">
+          <select id="galeriaCategoria" aria-label="Categoría de la nueva foto">
+            <option value="Inspiración">Inspiración</option>
+            <option value="Nelson Quest">Nelson Quest</option>
+            <option value="Iron Man">Iron Man</option>
+            <option value="Arifureta">Arifureta</option>
+            <option value="Otra">Otra</option>
+          </select>
+          <button class="btn btn--cian btn--sm" data-action="galeria-subir">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            Subir foto
+          </button>
+        </div>
+      </div>
+
+      <div class="galeria-grid" id="galeriaGrid"></div>
+      <p class="inspiracion-nota">Toca una imagen para ampliarla o usarla como retrato del dashboard. Tus fotos quedan guardadas en el navegador; si borras los datos del sitio, se pierden.</p>
+    </div>
+
+    <p class="pie-app">Arifureta HUD // archivo de inspiración // construido para no rendirse</p>
+  </section>
+
+</main>
+
+<!-- Navegación inferior móvil -->
+<nav class="bottomnav" aria-label="Navegación principal móvil">
+  <button class="active" data-nav="dashboard" data-action="nav" aria-label="Núcleo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 10.5L12 3l9 7.5V21H3z"/><path d="M9 21v-7h6v7"/></svg>
+    <span>Núcleo</span>
+  </button>
+  <button data-nav="pomodoro" data-action="nav" aria-label="Pomodoro">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6M12 2v3" stroke-linecap="round"/></svg>
+    <span>Enfoque</span>
+  </button>
+  <button data-nav="cronometro" data-action="nav" aria-label="Cronómetro">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 9.5v4.5l3 2M9.5 2.5h5M12 2.5V6" stroke-linecap="round"/></svg>
+    <span>Crono</span>
+  </button>
+  <button data-nav="notas" data-action="nav" aria-label="Libreta">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M5 3h11l4 4v14H5z"/><path d="M16 3v5h4M9 12h7M9 16h7" stroke-linecap="round"/></svg>
+    <span>Libreta</span>
+  </button>
+  <button data-nav="metas" data-action="nav" aria-label="Metas">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/><path d="M12 1v4M12 19v4M1 12h4M19 12h4" stroke-linecap="round"/></svg>
+    <span>Metas</span>
+  </button>
+  <button data-nav="inspiracion" data-action="nav" aria-label="Inspiración">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" stroke-linejoin="round"/><path d="M18.5 15l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z" stroke-linejoin="round"/></svg>
+    <span>Inspira</span>
+  </button>
+</nav>
+
+<!-- Modal de nota -->
+<div class="modal" id="modalNota" role="dialog" aria-modal="true" aria-labelledby="modalNotaTitulo">
+  <div class="modal__panel">
+    <div class="modal__head">
+      <div>
+        <p class="eyebrow">// libreta neón</p>
+        <h3 id="modalNotaTitulo">Nueva nota</h3>
+      </div>
+      <button class="icon-btn" data-action="nota-cerrar" aria-label="Cerrar nota">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="modal__cuerpo">
+      <label class="field">
+        <span>Título</span>
+        <input type="text" id="notaTitulo" maxlength="90" placeholder="Nombre de la idea…" autocomplete="off">
+      </label>
+      <div class="form-grid form-grid--2">
+        <label class="field">
+          <span>Etiqueta</span>
+          <select id="notaEtiqueta">
+            <option value="NOTA">Nota</option>
+            <option value="IDEA">Idea</option>
+            <option value="DIARIO">Diario</option>
+            <option value="MISIÓN">Misión</option>
+            <option value="ESTUDIO">Estudio</option>
+          </select>
+        </label>
+        <div class="field" style="justify-content:flex-end">
+          <span>Autoguardado</span>
+          <div class="autosave" id="estadoGuardado"><i></i><span>Guardado</span></div>
+        </div>
+      </div>
+      <label class="field">
+        <span>Contenido</span>
+        <textarea id="notaContenido" rows="9" placeholder="Escribe sin frenos. El sistema se encarga del resto…"></textarea>
+      </label>
+    </div>
+    <div class="modal__pie">
+      <span class="nota-meta" id="notaMeta">—</span>
+      <button class="btn btn--sangre btn--sm" data-action="nota-eliminar-abierta">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M9 7V4h6v3M7 7l1 14h8l1-14M10 11v6M14 11v6"/></svg>
+        Eliminar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de meta -->
+<div class="modal" id="modalMeta" role="dialog" aria-modal="true" aria-labelledby="modalMetaTitulo">
+  <div class="modal__panel">
+    <div class="modal__head">
+      <div>
+        <p class="eyebrow">// plan de metas</p>
+        <h3 id="modalMetaTitulo">Nueva meta</h3>
+      </div>
+      <button class="icon-btn" data-action="meta-cerrar" aria-label="Cerrar meta">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="modal__cuerpo">
+      <label class="field">
+        <span>Título de la meta</span>
+        <input type="text" id="metaTitulo" maxlength="100" placeholder="Ej. Dominar desarrollo frontend" autocomplete="off">
+      </label>
+      <label class="field">
+        <span>Descripción</span>
+        <textarea id="metaDescripcion" rows="3" maxlength="500" placeholder="¿Por qué esta meta importa?"></textarea>
+      </label>
+      <div class="form-grid form-grid--2">
+        <label class="field">
+          <span>Fecha límite</span>
+          <input type="date" id="metaFecha">
+        </label>
+        <label class="field">
+          <span>Categoría</span>
+          <select id="metaCategoria">
+            <option value="Personal">Personal</option>
+            <option value="Salud">Salud</option>
+            <option value="Estudio">Estudio</option>
+            <option value="Trabajo">Trabajo</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>Prioridad</span>
+          <select id="metaPrioridad">
+            <option value="Media">Media</option>
+            <option value="Alta">Alta</option>
+            <option value="Baja">Baja</option>
+          </select>
+        </label>
+      </div>
+      <div class="field">
+        <span>Hitos / milestones</span>
+        <div class="hitos-editor">
+          <div class="hitos-editor__fila">
+            <input type="text" id="hitoInput" maxlength="110" placeholder="Añadir un paso concreto…" autocomplete="off">
+            <button class="btn btn--sm" data-action="hito-agregar">Añadir</button>
+          </div>
+          <ul class="lista-hitos-draft" id="listaHitosDraft"></ul>
+        </div>
+      </div>
+      <p class="modal__nota">La barra de progreso se calcula automáticamente con los hitos marcados. Si no hay hitos, avanza al completar la meta.</p>
+    </div>
+    <div class="modal__pie">
+      <button class="btn btn--fantasma" data-action="meta-cerrar">Cancelar</button>
+      <button class="btn btn--cian" data-action="meta-guardar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h12l2 2v16H5z"/><path d="M8 3v6h8V3M8 21v-7h8v7"/></svg>
+        Guardar meta
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de confirmación -->
+<div class="modal" id="modalConfirm" role="dialog" aria-modal="true" aria-labelledby="confirmTitulo">
+  <div class="modal__panel modal__panel--sm">
+    <div class="modal__head">
+      <div>
+        <p class="eyebrow">// confirmación requerida</p>
+        <h3 id="confirmTitulo">¿Continuar?</h3>
+      </div>
+    </div>
+    <p class="confirmar-texto" id="confirmTexto"></p>
+    <div class="modal__pie" style="justify-content:flex-end">
+      <button class="btn btn--fantasma" data-action="confirm-no">Cancelar</button>
+      <button class="btn btn--sangre" data-action="confirm-si" id="confirmSi">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Visor de imagen -->
+<div class="modal modal--imagen" id="modalImagen" role="dialog" aria-modal="true" aria-labelledby="lightboxTitulo">
+  <div class="modal__panel modal__panel--imagen">
+    <div class="modal__head">
+      <div>
+        <p class="eyebrow">// visor de inspiración</p>
+        <h3 id="lightboxTitulo">Imagen</h3>
+      </div>
+      <button class="icon-btn" data-action="galeria-cerrar" aria-label="Cerrar visor">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="lightbox-marco">
+      <img id="lightboxImg" alt="">
+    </div>
+    <p class="lightbox-etiqueta" id="lightboxEtiqueta">—</p>
+    <div class="modal__pie" style="justify-content:flex-end">
+      <button class="btn btn--fantasma" data-action="galeria-cerrar">Cerrar</button>
+      <button class="btn btn--sangre" id="lightboxBorrar" data-action="lightbox-eliminar" hidden>Quitar foto</button>
+      <button class="btn btn--cian" id="lightboxRetrato" data-action="lightbox-retrato">Usar como retrato</button>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="inputImport" accept="application/json,.json" hidden>
+<input type="file" id="inputRetrato" accept="image/*" hidden>
+<input type="file" id="inputGaleria" accept="image/*" hidden>
+<div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+
+<script>
+'use strict';
+
+/* ════════════════════════════════════════════════════════════════
+   0 · CONFIGURACIÓN E IMÁGENES
+   Cambia aquí las URLs. Las imágenes son externas: si una falla,
+   la interfaz usa sus degradados y siluetas internas.
+   ════════════════════════════════════════════════════════════════ */
+const IMAGENES = {
+  // Fondo general del dashboard (anime/cyberpunk oscuro).
+  fondo: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1920&q=80',
+
+  // Retrato de Hajime Nagumo incluido en el repositorio (img/hajime.webp).
+  // El usuario puede reemplazarlo desde la vista Inspiración; esa foto
+  // personal se guarda como data URL en localStorage.
+  hajime: 'img/hajime.webp',
+
+  // Panel de energía / productividad (reactor de arco).
+  ironman: 'img/arc-reactor.png',
+
+  // Galería base e inspiración (archivos locales para GitHub Pages).
+  ironmanFigura: 'img/ironman.png',
+  arcReactor: 'img/arc-reactor.png',
+  nelson: 'img/nelson-quest.jpg',
+  nelsonBanner: 'img/nelson-banner.jpg',
+  darkModeEs: 'img/dark-mode-cover-es.png',
+  darkModeEn: 'img/dark-mode-cover.png',
+
+  // Banners sutiles de cada sección.
+  pomodoro: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1200&q=80',
+  cronometro: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1200&q=80',
+  notas: 'https://images.unsplash.com/photo-1517842645767-c639042777db?auto=format&fit=crop&w=1200&q=80',
+  metas: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1200&q=80',
+  inspiracion: 'img/nelson-banner.jpg'
+};
+
+// Alias solicitados para editar rápido desde cualquier punto.
+const IMAGEN_FONDO = IMAGENES.fondo;
+const IMAGEN_HAJIME = IMAGENES.hajime;
+const IMAGEN_IRONMAN = IMAGENES.ironman;
+
+const PREFIJO = 'arifureta_';
+const VISTAS = ['dashboard', 'pomodoro', 'cronometro', 'notas', 'metas', 'inspiracion'];
+const CATEGORIAS_GALERIA = ['Inspiración', 'Nelson Quest', 'Iron Man', 'Arifureta', 'Otra'];
+const LIMITE_LOCAL = 5 * 1024 * 1024;
+const MAX_FOTO_LOCAL = 900000; // caracteres de data URL por imagen
+const ETIQUETAS = ['NOTA', 'IDEA', 'DIARIO', 'MISIÓN', 'ESTUDIO'];
+const CATEGORIAS = ['Personal', 'Salud', 'Estudio', 'Trabajo'];
+const PRIORIDADES = ['Alta', 'Media', 'Baja'];
+
+const FRASES = [
+  '«No necesito que me salven. Yo soy el que salva.»',
+  '«El mundo no se detiene. Tú tampoco.»',
+  '«Forjado en el abismo, no en la comodidad.»',
+  '«Cada sesión es un paso fuera del abismo.»',
+  '«No esperes. Constrúyete.»',
+  '«El poder no se hereda. Se arranca.»',
+  '«Si el camino no existe, lo perforas.»'
+];
+
+const MODOS = {
+  focus: { nombre: 'Enfoque', corto: 'Enfoque' },
+  short: { nombre: 'Descanso corto', corto: 'Corto' },
+  long:  { nombre: 'Descanso largo', corto: 'Largo' }
+};
+
+/* ════════════════════════════════════════════════════════════════
+   1 · UTILIDADES GENERALES
+   ════════════════════════════════════════════════════════════════ */
+const $  = (sel, ctx = document) => ctx.querySelector(sel);
+const $$ = (sel, ctx = document) => Array.from(ctx.querySelectorAll(sel));
+const pad = n => String(n).padStart(2, '0');
+const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
+
+function uid() {
+  try {
+    if (window.crypto && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+  } catch (e) { /* contexto no seguro */ }
+  return 'id-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 9);
+}
+
+function esc(valor) {
+  return String(valor == null ? '' : valor).replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}
+
+function hoyISO(fecha = new Date()) {
+  return fecha.getFullYear() + '-' + pad(fecha.getMonth() + 1) + '-' + pad(fecha.getDate());
+}
+
+function sumarDiasISO(dias) {
+  const d = new Date();
+  d.setDate(d.getDate() + dias);
+  return hoyISO(d);
+}
+
+function fechaLegible(iso, conAnio = false) {
+  if (!iso) return 'Sin fecha';
+  const partes = String(iso).split('-').map(Number);
+  if (partes.length !== 3 || partes.some(n => !Number.isFinite(n))) return 'Sin fecha';
+  const d = new Date(partes[0], partes[1] - 1, partes[2]);
+  const opciones = { day: '2-digit', month: 'short' };
+  if (conAnio || d.getFullYear() !== new Date().getFullYear()) opciones.year = 'numeric';
+  return d.toLocaleDateString('es', opciones).replace('.', '');
+}
+
+function diasRestantes(iso) {
+  if (!iso) return null;
+  const p = String(iso).split('-').map(Number);
+  if (p.length !== 3 || p.some(n => !Number.isFinite(n))) return null;
+  const hoy = new Date();
+  const inicioHoy = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+  const fin = new Date(p[0], p[1] - 1, p[2]);
+  return Math.round((fin - inicioHoy) / 86400000);
+}
+
+function textoDias(iso) {
+  const d = diasRestantes(iso);
+  if (d === null) return 'Sin fecha límite';
+  if (d < 0) return 'Vencida hace ' + Math.abs(d) + (Math.abs(d) === 1 ? ' día' : ' días');
+  if (d === 0) return 'Vence hoy';
+  return 'Quedan ' + d + (d === 1 ? ' día' : ' días');
+}
+
+function formatoMMSS(ms) {
+  const total = Math.max(0, Math.ceil(ms / 1000));
+  return pad(Math.floor(total / 60)) + ':' + pad(total % 60);
+}
+
+function formatoCrono(ms) {
+  const totalCs = Math.max(0, Math.floor(ms / 10));
+  const cs = totalCs % 100;
+  const s = Math.floor(totalCs / 100) % 60;
+  const m = Math.floor(totalCs / 6000) % 60;
+  const h = Math.floor(totalCs / 360000);
+  return (h > 0 ? pad(h) + ':' : '') + pad(m) + ':' + pad(s) + '.' + pad(cs);
+}
+
+function descargarBlob(blob, nombre) {
+  try {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = nombre;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+  } catch (e) {
+    toast('No se pudo generar la descarga.', 'err');
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   2 · ALMACENAMIENTO LOCAL (prefijo arifureta_)
+   ════════════════════════════════════════════════════════════════ */
+const LS = {
+  get(clave, porDefecto) {
+    try {
+      const bruto = localStorage.getItem(PREFIJO + clave);
+      if (bruto === null) return porDefecto;
+      return JSON.parse(bruto);
+    } catch (e) {
+      console.warn('Dato local corrupto:', clave);
+      return porDefecto;
+    }
+  },
+  set(clave, valor) {
+    try {
+      localStorage.setItem(PREFIJO + clave, JSON.stringify(valor));
+      return true;
+    } catch (e) {
+      toast('Almacenamiento lleno o bloqueado por el navegador.', 'err');
+      return false;
+    }
+  },
+  del(clave) {
+    try { localStorage.removeItem(PREFIJO + clave); } catch (e) { /* ignorar */ }
+  }
+};
+
+/* ════════════════════════════════════════════════════════════════
+   3 · NORMALIZADORES Y CARGA DE ESTADO
+   ════════════════════════════════════════════════════════════════ */
+function normalizarNota(n) {
+  return {
+    id: String(n && n.id ? n.id : uid()),
+    titulo: String((n && n.titulo) || '').slice(0, 200),
+    contenido: String((n && n.contenido) || '').slice(0, 20000),
+    etiqueta: ETIQUETAS.includes(n && n.etiqueta) ? n.etiqueta : 'NOTA',
+    createdAt: Number(n && n.createdAt) || Date.now(),
+    updatedAt: Number(n && n.updatedAt) || Date.now()
+  };
+}
+
+function normalizarHito(h) {
+  return {
+    id: String(h && h.id ? h.id : uid()),
+    texto: String((h && h.texto) || (typeof h === 'string' ? h : '')).slice(0, 160),
+    hecho: Boolean(h && h.hecho)
+  };
+}
+
+function normalizarMeta(m) {
+  const hitos = Array.isArray(m && m.hitos) ? m.hitos.map(normalizarHito).filter(h => h.texto) : [];
+  return {
+    id: String(m && m.id ? m.id : uid()),
+    titulo: String((m && m.titulo) || '').slice(0, 160),
+    descripcion: String((m && m.descripcion) || '').slice(0, 1200),
+    fecha: m && /^\d{4}-\d{2}-\d{2}$/.test(m.fecha) ? m.fecha : sumarDiasISO(14),
+    categoria: CATEGORIAS.includes(m && m.categoria) ? m.categoria : 'Personal',
+    prioridad: PRIORIDADES.includes(m && m.prioridad) ? m.prioridad : 'Media',
+    hitos,
+    completada: Boolean(m && m.completada),
+    createdAt: Number(m && m.createdAt) || Date.now(),
+    updatedAt: Number(m && m.updatedAt) || Date.now()
+  };
+}
+
+function cargarPomodoro() {
+  const def = { work: 25, short: 5, long: 15, mode: 'focus', remaining: 25 * 60000, running: false, endAt: null, sessions: {} };
+  const g = LS.get('pomodoro', null);
+  if (!g || typeof g !== 'object') return def;
+  const p = Object.assign({}, def, g);
+  p.work  = clamp(parseInt(p.work, 10)  || 25, 1, 180);
+  p.short = clamp(parseInt(p.short, 10) || 5,  1, 60);
+  p.long  = clamp(parseInt(p.long, 10)  || 15, 1, 90);
+  p.mode = MODOS[p.mode] ? p.mode : 'focus';
+  p.sessions = (p.sessions && typeof p.sessions === 'object' && !Array.isArray(p.sessions)) ? p.sessions : {};
+  p.running = Boolean(p.running);
+  p.endAt = Number(p.endAt);
+  p.remaining = Number(p.remaining);
+  if (!Number.isFinite(p.endAt)) { p.running = false; p.endAt = null; }
+  if (!Number.isFinite(p.remaining) || p.remaining < 0) p.remaining = 25 * 60000;
+  return p;
+}
+
+function cargarCronometro() {
+  const g = LS.get('cronometro', null);
+  if (!g || typeof g !== 'object') return { base: 0, startedAt: null, laps: [] };
+  const laps = Array.isArray(g.laps) ? g.laps.filter(l => l && Number.isFinite(Number(l.total)) && Number.isFinite(Number(l.parcial)))
+    .map(l => ({ parcial: Math.max(0, Number(l.parcial)), total: Math.max(0, Number(l.total)) })) : [];
+  return {
+    base: Math.max(0, Number(g.base) || 0),
+    startedAt: Number.isFinite(Number(g.startedAt)) && Number(g.startedAt) > 0 ? Number(g.startedAt) : null,
+    laps
+  };
+}
+
+function cargarNotas() {
+  const g = LS.get('notas', []);
+  return Array.isArray(g) ? g.map(normalizarNota).filter(n => n.titulo || n.contenido) : [];
+}
+
+function cargarMetas() {
+  const g = LS.get('metas', []);
+  return Array.isArray(g) ? g.map(normalizarMeta).filter(m => m.titulo) : [];
+}
+
+function cargarGaleria() {
+  const g = LS.get('galeria', []);
+  if (!Array.isArray(g)) return [];
+  return g.filter(f => f && typeof f.data === 'string' && f.data.indexOf('data:image/') === 0)
+    .slice(0, 24)
+    .map((f, i) => ({
+      id: String(f.id || 'foto-' + i + '-' + Date.now()),
+      nombre: String(f.nombre || 'Inspiración').slice(0, 80),
+      categoria: CATEGORIAS_GALERIA.includes(f.categoria) ? f.categoria : 'Inspiración',
+      data: f.data,
+      createdAt: Number(f.createdAt) || Date.now()
+    }));
+}
+
+function cargarRetrato() {
+  const g = LS.get('retrato', null);
+  return typeof g === 'string' && (g.indexOf('data:image/') === 0 || /^img\//.test(g)) ? g : null;
+}
+
+function cargarPrefs() {
+  const def = { contraste: false, sonido: true, lastVisit: null, streak: 0, bestStreak: 0, lastBackup: null };
+  const g = LS.get('prefs', null);
+  if (!g || typeof g !== 'object') return def;
+  return {
+    contraste: Boolean(g.contraste),
+    sonido: g.sonido === undefined ? true : Boolean(g.sonido),
+    lastVisit: typeof g.lastVisit === 'string' ? g.lastVisit : null,
+    streak: Math.max(0, parseInt(g.streak, 10) || 0),
+    bestStreak: Math.max(0, parseInt(g.bestStreak, 10) || 0),
+    lastBackup: typeof g.lastBackup === 'string' ? g.lastBackup : null
+  };
+}
+
+// Estado único de la aplicación
+let state = {
+  pomodoro: cargarPomodoro(),
+  cronometro: cargarCronometro(),
+  notas: cargarNotas(),
+  metas: cargarMetas(),
+  prefs: cargarPrefs(),
+  retrato: cargarRetrato(),
+  galeria: cargarGaleria()
+};
+
+// Persistencia por secciones
+const guardarPomodoro = () => LS.set('pomodoro', state.pomodoro);
+const guardarCrono = () => LS.set('cronometro', state.cronometro);
+const guardarNotas = () => LS.set('notas', state.notas);
+const guardarMetas = () => LS.set('metas', state.metas);
+const guardarPrefs = () => LS.set('prefs', state.prefs);
+const guardarGaleria = () => LS.set('galeria', state.galeria);
+
+function persistirTodo() {
+  guardarPomodoro(); guardarCrono(); guardarNotas(); guardarMetas(); guardarPrefs(); guardarGaleria();
+  if (state.retrato) LS.set('retrato', state.retrato);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   4 · VARIABLES DE INTERFAZ
+   ════════════════════════════════════════════════════════════════ */
+let vistaActual = 'dashboard';
+let notaAbiertaId = null;
+let notaTimer = null;
+let notaBusqueda = '';
+let metaEditandoId = null;
+let hitosDraft = [];
+let metaFiltro = 'todas';
+let confirmResolver = null;
+let audioCtx = null;
+let fraseIndice = Math.floor(Math.random() * FRASES.length);
+let ultimaHora = -1;
+let ultimoTituloDoc = '';
+let cronoSesionNum = 1;
+let fotoLightboxId = null;
+let galeriaCategoria = 'Inspiración';
+let galeriaFiltro = 'Todas';
+
+/* ════════════════════════════════════════════════════════════════
+   5 · INICIALIZACIÓN
+   ════════════════════════════════════════════════════════════════ */
+function iniciar() {
+  aplicarImagenes();
+  actualizarRacha();
+  aplicarContraste(state.prefs.contraste, false);
+  registrarEventos();
+
+  actualizarReloj();
+  pintarFrase(true);
+  irA(vistaDesdeHash(), true);
+  renderTodo();
+  iniciarBoot();
+
+  // Latidos del sistema
+  tickPomodoro();
+  setInterval(tickPomodoro, 250);
+  setInterval(() => { if (state.pomodoro.running) guardarPomodoro(); }, 5000);
+  setInterval(() => { if (state.cronometro.startedAt) guardarCrono(); }, 3000);
+  setInterval(actualizarReloj, 1000);
+  setInterval(rotarFrase, 14000);
+  requestAnimationFrame(bucleCrono);
+
+  window.addEventListener('beforeunload', () => {
+    if (notaAbiertaId) sincronizarNotaDesdeInputs();
+    // El cronómetro conserva el tiempo transcurrido, pero no sigue contando
+    // mientras el navegador está cerrado.
+    if (state.cronometro.startedAt) {
+      state.cronometro.base += Date.now() - state.cronometro.startedAt;
+      state.cronometro.startedAt = null;
+    }
+    persistirTodo();
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) persistirTodo();
+    else { tickPomodoro(); pintarCrono(); actualizarReloj(); }
+  });
+}
+
+function vistaDesdeHash() {
+  const hash = (location.hash || '').replace('#', '');
+  return VISTAS.includes(hash) ? hash : 'dashboard';
+}
+
+function retratoActivo() {
+  return state.retrato || IMAGENES.hajime;
+}
+
+function aplicarRetrato() {
+  const url = retratoActivo();
+  const imgHajime = $('#hajimeImg');
+  const fallback = $('#hajimeFallback');
+  if (imgHajime && fallback) {
+    imgHajime.onerror = () => { imgHajime.hidden = true; fallback.hidden = false; };
+    imgHajime.onload = () => { imgHajime.hidden = false; fallback.hidden = true; };
+    if (url) {
+      imgHajime.hidden = false;
+      fallback.hidden = true;
+      imgHajime.src = url;
+    } else {
+      imgHajime.hidden = true;
+      fallback.hidden = false;
+    }
+  }
+  const retratoInsp = $('#inspiracionRetrato');
+  if (retratoInsp) {
+    retratoInsp.onerror = () => {
+      if (retratoInsp.getAttribute('src') !== IMAGENES.hajime) retratoInsp.src = IMAGENES.hajime;
+    };
+    retratoInsp.src = url || IMAGENES.hajime;
+  }
+  const estado = $('#retratoEstado');
+  if (estado) estado.textContent = state.retrato ? 'Foto personal guardada en este dispositivo' : 'Imagen incluida en el sistema';
+  const btnReset = $('#btnRetratoReset');
+  if (btnReset) btnReset.hidden = !state.retrato;
+}
+
+function aplicarImagenes() {
+  const fondo = $('#bgFondo');
+  if (fondo && IMAGENES.fondo) fondo.style.backgroundImage = 'url("' + IMAGENES.fondo + '")';
+
+  const arcBg = $('#arcBg');
+  if (arcBg && IMAGENES.ironman) {
+    arcBg.hidden = false;
+    arcBg.onerror = () => { arcBg.hidden = true; };
+    arcBg.src = IMAGENES.ironman;
+  }
+
+  aplicarRetrato();
+
+  $$('.view-head[data-banner]').forEach(cabecera => {
+    const url = IMAGENES[cabecera.dataset.banner];
+    if (url) {
+      cabecera.style.backgroundImage = 'url("' + url + '")';
+      cabecera.classList.add('has-banner');
+    }
+  });
+}
+
+function iniciarBoot() {
+  const boot = $('#boot');
+  if (!boot) return;
+  const reducido = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let cerrado = false;
+  const cerrar = () => {
+    if (cerrado) return;
+    cerrado = true;
+    boot.classList.add('done');
+    setTimeout(() => { if (boot.parentNode) boot.remove(); }, 700);
+  };
+  const temporizador = setTimeout(cerrar, reducido ? 300 : 2600);
+  boot.addEventListener('click', () => { clearTimeout(temporizador); cerrar(); });
+}
+
+/* ════════════════════════════════════════════════════════════════
+   6 · RELOJ, SALUDO, RACHA Y CONTRASTE
+   ════════════════════════════════════════════════════════════════ */
+function actualizarReloj() {
+  const ahora = new Date();
+  const hora = $('#reloj');
+  const fecha = $('#fecha');
+  if (hora) {
+    hora.textContent = new Intl.DateTimeFormat('es', {
+      hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+    }).format(ahora);
+  }
+  if (fecha) {
+    const texto = new Intl.DateTimeFormat('es', {
+      weekday: 'short', day: '2-digit', month: 'short'
+    }).format(ahora).replace(/\./g, '');
+    fecha.textContent = texto.charAt(0).toUpperCase() + texto.slice(1);
+  }
+  if (ahora.getHours() !== ultimaHora) {
+    ultimaHora = ahora.getHours();
+    pintarSaludo();
+  }
+}
+
+function pintarSaludo() {
+  const h = new Date().getHours();
+  const saludo = h < 6 ? 'Aún en el abismo' : h < 12 ? 'Buenos días' : h < 20 ? 'Buenas tardes' : 'Buenas noches';
+  const el = $('#saludo');
+  if (el) el.innerHTML = esc(saludo) + '<span>.</span>';
+}
+
+function sesionesHoy() {
+  return parseInt(state.pomodoro.sessions[hoyISO()], 10) || 0;
+}
+
+function actualizarRacha() {
+  const p = state.prefs;
+  const hoy = hoyISO();
+  if (p.lastVisit !== hoy) {
+    const ayer = hoyISO(new Date(Date.now() - 86400000));
+    p.streak = p.lastVisit === ayer ? (p.streak || 0) + 1 : 1;
+    p.lastVisit = hoy;
+    p.bestStreak = Math.max(p.bestStreak || 0, p.streak);
+    guardarPrefs();
+  }
+  pintarRacha();
+}
+
+function pintarRacha() {
+  const racha = state.prefs.streak || 0;
+  const el = $('#rachaVal'); if (el) el.textContent = racha;
+  const hero = $('#heroRacha'); if (hero) hero.textContent = racha;
+  const arc = $('#arcRacha'); if (arc) arc.textContent = racha;
+  const heroS = $('#heroSesiones'); if (heroS) heroS.textContent = sesionesHoy();
+  const lateral = $('#lateralSesiones');
+  if (lateral) lateral.textContent = sesionesHoy() + (sesionesHoy() === 1 ? ' sesión hoy' : ' sesiones hoy');
+}
+
+function aplicarContraste(activo, guardar = true) {
+  state.prefs.contraste = Boolean(activo);
+  document.body.classList.toggle('hc', Boolean(activo));
+  const btn = $('#btnContraste');
+  if (btn) {
+    btn.setAttribute('aria-pressed', String(Boolean(activo)));
+    btn.title = activo ? 'Desactivar alto contraste' : 'Activar alto contraste';
+  }
+  if (guardar) guardarPrefs();
+}
+
+function alternarContraste() {
+  aplicarContraste(!state.prefs.contraste);
+  toast(state.prefs.contraste ? 'Alto contraste activado.' : 'Contraste estándar restaurado.', 'ok');
+}
+
+/* ════════════════════════════════════════════════════════════════
+   7 · NAVEGACIÓN Y FRASES
+   ════════════════════════════════════════════════════════════════ */
+function irA(vista, inicial = false) {
+  if (!VISTAS.includes(vista)) vista = 'dashboard';
+  vistaActual = vista;
+
+  $$('.view').forEach(sec => sec.classList.toggle('active', sec.id === 'view-' + vista));
+  $$('[data-nav]').forEach(btn => {
+    const activo = btn.dataset.nav === vista;
+    btn.classList.toggle('active', activo);
+    if (activo) btn.setAttribute('aria-current', 'page');
+    else btn.removeAttribute('aria-current');
+  });
+
+  try { history.replaceState(null, '', '#' + vista); } catch (e) { /* file:// antiguo */ }
+  if (!inicial) window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  if (vista === 'dashboard') actualizarDashboard();
+  if (vista === 'pomodoro') pintarPomodoro();
+  if (vista === 'cronometro') { pintarCrono(); renderLaps(); }
+  if (vista === 'notas') renderNotas();
+  if (vista === 'metas') renderMetas();
+  if (vista === 'inspiracion') { renderInspiracion(); renderRespaldo(); }
+}
+
+function pintarFrase(inmediata = false) {
+  const el = $('#frase');
+  if (!el) return;
+  if (inmediata) {
+    el.textContent = FRASES[fraseIndice];
+    return;
+  }
+  el.classList.add('cambiando');
+  setTimeout(() => {
+    fraseIndice = (fraseIndice + 1) % FRASES.length;
+    el.textContent = FRASES[fraseIndice];
+    el.classList.remove('cambiando');
+  }, 360);
+}
+
+function rotarFrase() { pintarFrase(false); }
+
+/* ════════════════════════════════════════════════════════════════
+   8 · TOASTS Y AUDIO
+   ════════════════════════════════════════════════════════════════ */
+function toast(mensaje, tipo = '') {
+  const contenedor = $('#toasts');
+  if (!contenedor) return;
+  const el = document.createElement('div');
+  el.className = 'toast' + (tipo ? ' toast--' + tipo : '');
+  el.textContent = mensaje;
+  contenedor.appendChild(el);
+  while (contenedor.children.length > 3) contenedor.firstElementChild.remove();
+  setTimeout(() => {
+    el.classList.add('saliendo');
+    setTimeout(() => el.remove(), 320);
+  }, 3600);
+}
+
+function asegurarAudio() {
+  try {
+    if (!audioCtx) {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return null;
+      audioCtx = new Ctx();
+    }
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    return audioCtx;
+  } catch (e) { return null; }
+}
+
+function sonarAlarma() {
+  if (!state.prefs.sonido) return;
+  const ctx = asegurarAudio();
+  if (!ctx) return;
+  try {
+    const inicio = ctx.currentTime + 0.02;
+    const notas = [659.25, 783.99, 987.77, 1318.51];
+    notas.forEach((freq, i) => {
+      const t = inicio + i * 0.16;
+      const osc = ctx.createOscillator();
+      const gan = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, t);
+      gan.gain.setValueAtTime(0.0001, t);
+      gan.gain.exponentialRampToValueAtTime(0.16, t + 0.02);
+      gan.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+      osc.connect(gan); gan.connect(ctx.destination);
+      osc.start(t); osc.stop(t + 0.55);
+    });
+  } catch (e) { /* audio bloqueado */ }
+}
+
+function probarSonido() {
+  asegurarAudio();
+  sonarAlarma();
+  toast('Secuencia de audio ejecutada.', 'ok');
+}
+
+/* ════════════════════════════════════════════════════════════════
+   9 · RENDER GLOBAL
+   ════════════════════════════════════════════════════════════════ */
+function renderTodo() {
+  const sw = $('#switchSonido');
+  if (sw) sw.checked = Boolean(state.prefs.sonido);
+  aplicarFormularioPomodoro();
+  renderNotas();
+  renderMetas();
+  actualizarDashboard();
+  pintarPomodoro();
+  pintarCrono();
+  renderLaps();
+  pintarRacha();
+  renderInspiracion();
+  renderRespaldo();
+}
+
+function progresoMeta(m) {
+  if (!m) return 0;
+  if (m.completada) return 100;
+  if (!m.hitos || !m.hitos.length) return 0;
+  return Math.round(m.hitos.filter(h => h.hecho).length / m.hitos.length * 100);
+}
+
+function metasActivas() { return state.metas.filter(m => !m.completada); }
+
+function metasEnRiesgo() {
+  return metasActivas().filter(m => {
+    const d = diasRestantes(m.fecha);
+    const pr = progresoMeta(m);
+    return d !== null && (d < 0 || (d <= 7 && pr < 50));
+  }).length;
+}
+
+function calcularProductividad() {
+  const sesiones = sesionesHoy();
+  const activas = metasActivas();
+  const promedio = activas.length ? activas.reduce((s, m) => s + progresoMeta(m), 0) / activas.length : 0;
+  const hoy = new Date();
+  const notasHoy = state.notas.filter(n => {
+    const f = new Date(n.createdAt);
+    return f.getFullYear() === hoy.getFullYear() && f.getMonth() === hoy.getMonth() && f.getDate() === hoy.getDate();
+  }).length;
+  const minutosCrono = Math.floor(tiempoCrono() / 60000);
+  let puntos = Math.min(60, sesiones * 20);
+  puntos += Math.min(25, promedio * 0.25);
+  puntos += Math.min(10, notasHoy * 5);
+  puntos += Math.min(5, Math.floor(minutosCrono / 10));
+  return clamp(Math.round(puntos), 0, 100);
+}
+
+function ajustarAnillo(circulo, fraccion) {
+  if (!circulo) return;
+  const r = (circulo.r && circulo.r.baseVal) ? circulo.r.baseVal.value : parseFloat(circulo.getAttribute('r')) || 0;
+  if (!r) return;
+  const circunferencia = 2 * Math.PI * r;
+  circulo.style.strokeDasharray = circunferencia.toFixed(2);
+  circulo.style.strokeDashoffset = (circunferencia * (1 - clamp(fraccion, 0, 1))).toFixed(2);
+}
+
+function pintarValoresRapidos() {
+  const p = state.pomodoro;
+  const pomoValor = $('#dashPomoValor');
+  const pomoMeta = $('#dashPomoMeta');
+  if (pomoValor) pomoValor.textContent = formatoMMSS(p.remaining);
+  if (pomoMeta) {
+    pomoMeta.textContent = p.running
+      ? MODOS[p.mode].nombre + ' en curso'
+      : MODOS[p.mode].nombre + ' en pausa · ' + (sesionesHoy() ? sesionesHoy() + ' hoy' : 'sin iniciar');
+  }
+  const cronoValor = $('#dashCronoValor');
+  const cronoMeta = $('#dashCronoMeta');
+  const t = tiempoCrono();
+  if (cronoValor) cronoValor.textContent = formatoCrono(t);
+  if (cronoMeta) {
+    if (state.cronometro.startedAt) cronoMeta.textContent = 'Corriendo';
+    else if (t > 0) cronoMeta.textContent = 'En pausa';
+    else cronoMeta.textContent = 'Detenido';
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   10 · DASHBOARD
+   ════════════════════════════════════════════════════════════════ */
+function actualizarDashboard() {
+  pintarSaludo();
+  pintarValoresRapidos();
+
+  const notasValor = $('#dashNotasValor');
+  if (notasValor) notasValor.textContent = state.notas.length;
+
+  // Próxima meta activa por fecha
+  const proximas = metasActivas()
+    .filter(m => m.fecha)
+    .sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)));
+  const proxima = proximas[0];
+  const metaValor = $('#dashMetaValor');
+  const metaInfo = $('#dashMetaInfo');
+  if (metaValor) metaValor.textContent = proxima ? proxima.titulo : 'Sin meta activa';
+  if (metaInfo) {
+    if (proxima) {
+      metaInfo.textContent = fechaLegible(proxima.fecha) + ' · ' + textoDias(proxima.fecha) + ' · ' + progresoMeta(proxima) + '%';
+      metaInfo.classList.toggle('text-crimson', metasEnRiesgo() > 0 && diasRestantes(proxima.fecha) <= 7);
+    } else {
+      metaInfo.textContent = 'Define tu próxima misión';
+      metaInfo.classList.remove('text-crimson');
+    }
+  }
+
+  // Reactor
+  const puntos = calcularProductividad();
+  const arcPct = $('#arcPct');
+  const arcEstado = $('#arcEstado');
+  if (arcPct) {
+    arcPct.textContent = puntos;
+    arcPct.style.color = puntos < 25 ? 'var(--crimson)' : puntos < 50 ? 'var(--purple)' : 'var(--cyan)';
+  }
+  if (arcEstado) {
+    arcEstado.textContent = puntos === 0 ? 'Núcleo inactivo' : puntos < 25 ? 'Núcleo inestable' : puntos < 50 ? 'Carga baja' : puntos < 75 ? 'Núcleo estable' : 'Sobrecarga óptima';
+  }
+  ajustarAnillo($('#arcRing'), puntos / 100);
+
+  const arcSesiones = $('#arcSesiones');
+  if (arcSesiones) arcSesiones.textContent = sesionesHoy();
+  const arcMetas = $('#arcMetas');
+  if (arcMetas) {
+    const activas = metasActivas();
+    const prom = activas.length ? Math.round(activas.reduce((s, m) => s + progresoMeta(m), 0) / activas.length) : 0;
+    arcMetas.textContent = prom + '%';
+  }
+
+  // Notas recientes
+  const contenedor = $('#dashNotasRecientes');
+  if (contenedor) {
+    const recientes = state.notas.slice().sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 3);
+    if (!recientes.length) {
+      contenedor.innerHTML = '<div class="vacio"><strong>Sin registros</strong>La libreta espera tu primera idea.</div>';
+    } else {
+      contenedor.innerHTML = recientes.map(n => {
+        const titulo = n.titulo || 'Sin título';
+        return '<button class="nota-fila" data-action="note-open" data-id="' + esc(n.id) + '">' +
+          '<span class="nota-fila__tag">' + esc(n.etiqueta) + '</span>' +
+          '<span class="nota-fila__cuerpo">' +
+            '<span class="nota-fila__titulo">' + esc(titulo) + '</span>' +
+            '<span class="nota-fila__fecha">' + esc(fechaLegible(hoyISO(new Date(n.updatedAt))) ) + '</span>' +
+          '</span>' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+        '</button>';
+      }).join('');
+    }
+  }
+
+  pintarRacha();
+}
+
+/* ════════════════════════════════════════════════════════════════
+   10.5 · INSPIRACIÓN, GALERÍA Y RESPALDO VISUAL
+   ════════════════════════════════════════════════════════════════ */
+function galeriaBase() {
+  return [
+    { id: 'hajime', nombre: 'Hajime Nagumo', categoria: 'Arifureta', src: IMAGENES.hajime, base: true },
+    { id: 'ironman', nombre: 'Iron Man · armadura', categoria: 'Iron Man', src: IMAGENES.ironmanFigura, base: true },
+    { id: 'arc', nombre: 'Reactor de arco', categoria: 'Iron Man', src: IMAGENES.arcReactor, base: true },
+    { id: 'nelson', nombre: 'Nelson Quest', categoria: 'Nelson Quest', src: IMAGENES.nelson, base: true },
+    { id: 'nelson-banner', nombre: 'Nelson Quest · banner', categoria: 'Nelson Quest', src: IMAGENES.nelsonBanner, base: true },
+    { id: 'dark-es', nombre: 'Dark Mode · portada ES', categoria: 'Nelson Quest', src: IMAGENES.darkModeEs, base: true },
+    { id: 'dark-en', nombre: 'Dark Mode · portada EN', categoria: 'Nelson Quest', src: IMAGENES.darkModeEn, base: true }
+  ];
+}
+
+function todasLasFotos() {
+  const mias = state.galeria.map(f => ({
+    id: f.id, nombre: f.nombre, categoria: f.categoria,
+    src: f.data, custom: true, createdAt: f.createdAt
+  }));
+  return galeriaBase().concat(mias);
+}
+
+function fotoPorId(id) {
+  return todasLasFotos().find(f => f.id === id) || null;
+}
+
+function renderInspiracion() {
+  const rejilla = $('#galeriaGrid');
+  const contador = $('#galeriaContador');
+  if (!rejilla) return;
+
+  const fotos = todasLasFotos();
+  const filtradas = fotos.filter(f => {
+    if (galeriaFiltro === 'Todas') return true;
+    if (galeriaFiltro === 'Mías') return Boolean(f.custom);
+    return f.categoria === galeriaFiltro;
+  });
+
+  if (contador) {
+    contador.textContent = filtradas.length + (filtradas.length === 1 ? ' imagen' : ' imágenes') +
+      (state.galeria.length ? ' · ' + state.galeria.length + ' tuya' + (state.galeria.length === 1 ? '' : 's') : '');
+  }
+
+  $$('[data-action="galeria-filtro"]').forEach(btn => {
+    const activo = btn.dataset.cat === galeriaFiltro;
+    btn.classList.toggle('active', activo);
+    btn.setAttribute('aria-pressed', String(activo));
+  });
+
+  if (!filtradas.length) {
+    rejilla.innerHTML = '<div class="vacio" style="grid-column:1/-1"><strong>Sin imágenes en este filtro</strong>Sube una foto tuya para empezar tu archivo de inspiración.</div>';
+  } else {
+    rejilla.innerHTML = filtradas.map(f => {
+      const esRetrato = retratoActivo() === f.src;
+      return '<article class="galeria-card' + (esRetrato ? ' es-retrato' : '') + '">' +
+        '<button class="galeria-card__media" data-action="galeria-ver" data-id="' + esc(f.id) + '">' +
+          '<span class="sr-only">Ampliar: </span>' +
+          '<img src="' + esc(f.src) + '" alt="' + esc(f.nombre) + '" loading="lazy">' +
+          '<span class="galeria-card__tag">' + esc(f.categoria) + '</span>' +
+          (esRetrato ? '<span class="galeria-card__retrato">Retrato activo</span>' : '') +
+        '</button>' +
+        '<div class="galeria-card__pie">' +
+          '<div class="galeria-card__texto">' +
+            '<strong>' + esc(f.nombre) + '</strong>' +
+            '<small>' + (f.custom ? 'Guardada en este dispositivo' : 'Incluida en el sistema') + '</small>' +
+          '</div>' +
+          '<div class="galeria-card__acciones">' +
+            '<button class="galeria-mini" data-action="galeria-retrato" data-id="' + esc(f.id) + '" title="Usar como retrato del dashboard" aria-label="Usar ' + esc(f.nombre) + ' como retrato">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7" stroke-linecap="round"/></svg>' +
+            '</button>' +
+            (f.custom ? '<button class="galeria-mini galeria-mini--peligro" data-action="galeria-eliminar" data-id="' + esc(f.id) + '" title="Quitar esta foto" aria-label="Quitar ' + esc(f.nombre) + '">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M9 7V4h6v3M7 7l1 14h8l1-14"/></svg>' +
+            '</button>' : '') +
+          '</div>' +
+        '</div>' +
+      '</article>';
+    }).join('');
+  }
+
+  const select = $('#galeriaCategoria');
+  if (select) select.value = galeriaCategoria;
+  const vacioRetrato = $('#btnRetratoReset');
+  if (vacioRetrato) vacioRetrato.hidden = !state.retrato;
+  const estado = $('#retratoEstado');
+  if (estado) estado.textContent = state.retrato ? 'Foto personal guardada en este dispositivo' : 'Imagen incluida en el sistema';
+}
+
+function renderRespaldo() {
+  const usado = bytesLocales();
+  const pct = usado ? Math.max(1, Math.round(usado / LIMITE_LOCAL * 100)) : 0;
+  const pctTexto = clamp(pct, 0, 100);
+
+  const barra = $('#respaldoBarra');
+  if (barra) {
+    barra.style.width = Math.max(2, pctTexto) + '%';
+    barra.classList.toggle('alto', pctTexto >= 75);
+    barra.classList.toggle('critico', pctTexto >= 92);
+  }
+  const pctEl = $('#respaldoPct');
+  if (pctEl) pctEl.textContent = pctTexto + '%';
+  const usadoEl = $('#respaldoUsado');
+  if (usadoEl) usadoEl.textContent = formatearBytes(usado) + ' de ' + formatearBytes(LIMITE_LOCAL);
+  const ultimoEl = $('#respaldoUltimo');
+  if (ultimoEl) ultimoEl.textContent = state.prefs.lastBackup ? fechaHoraLegible(state.prefs.lastBackup) : 'Nunca';
+  const fotosEl = $('#respaldoFotos');
+  if (fotosEl) fotosEl.textContent = state.galeria.length + (state.retrato ? 1 : 0);
+  const notasEl = $('#respaldoNotas');
+  if (notasEl) notasEl.textContent = state.notas.length;
+  const metasEl = $('#respaldoMetas');
+  if (metasEl) metasEl.textContent = state.metas.length;
+}
+
+function bytesLocales() {
+  let total = 0;
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const clave = localStorage.key(i);
+      if (!clave || clave.indexOf(PREFIJO) !== 0) continue;
+      const valor = localStorage.getItem(clave) || '';
+      total += (clave.length + valor.length) * 2;
+    }
+  } catch (e) { /* almacenamiento bloqueado */ }
+  return total;
+}
+
+function formatearBytes(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1).replace('.', ',') + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(2).replace('.', ',') + ' MB';
+}
+
+function fechaHoraLegible(iso) {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return 'Nunca';
+  return d.toLocaleDateString('es', { day: '2-digit', month: 'short', year: 'numeric' }) +
+    ' · ' + d.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
+}
+
+function comprimirImagen(archivo, maxLado = 1200, calidad = 0.82) {
+  return new Promise((resolve, reject) => {
+    if (!archivo || !/^image\//.test(archivo.type || '')) {
+      reject(new Error('Selecciona un archivo de imagen válido.'));
+      return;
+    }
+    if (archivo.size > 14 * 1024 * 1024) {
+      reject(new Error('La imagen supera los 14 MB. Usa una más ligera.'));
+      return;
+    }
+    const url = URL.createObjectURL(archivo);
+    const img = new Image();
+    img.onload = () => {
+      try {
+        URL.revokeObjectURL(url);
+        const escala = Math.min(1, maxLado / Math.max(img.naturalWidth || img.width, img.naturalHeight || img.height));
+        const ancho = Math.max(1, Math.round((img.naturalWidth || img.width) * escala));
+        const alto = Math.max(1, Math.round((img.naturalHeight || img.height) * escala));
+        const lienzo = document.createElement('canvas');
+        lienzo.width = ancho;
+        lienzo.height = alto;
+        const ctx = lienzo.getContext('2d');
+        ctx.fillStyle = '#050508';
+        ctx.fillRect(0, 0, ancho, alto);
+        ctx.drawImage(img, 0, 0, ancho, alto);
+        let salida = lienzo.toDataURL('image/jpeg', calidad);
+        let q = calidad;
+        while (salida.length > MAX_FOTO_LOCAL && q > 0.42) {
+          q -= 0.08;
+          salida = lienzo.toDataURL('image/jpeg', q);
+        }
+        if (salida.length > MAX_FOTO_LOCAL) {
+          reject(new Error('La imagen sigue siendo muy pesada. Prueba con otra foto.'));
+          return;
+        }
+        resolve(salida);
+      } catch (e) {
+        reject(new Error('No se pudo procesar la imagen.'));
+      }
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('No se pudo leer la imagen seleccionada.'));
+    };
+    img.src = url;
+  });
+}
+
+async function subirRetrato(archivo) {
+  if (!archivo) return;
+  try {
+    toast('Procesando retrato…');
+    const data = await comprimirImagen(archivo, 1200, 0.84);
+    if (!LS.set('retrato', data)) return;
+    state.retrato = data;
+    aplicarRetrato();
+    renderInspiracion();
+    renderRespaldo();
+    toast('Retrato actualizado y guardado en este dispositivo.', 'ok');
+  } catch (e) {
+    toast(e.message || 'No se pudo procesar la imagen.', 'err');
+  }
+}
+
+async function subirFotoGaleria(archivo) {
+  if (!archivo) return;
+  if (state.galeria.length >= 16) {
+    toast('Límite alcanzado: quita alguna foto antes de subir otra.', 'err');
+    return;
+  }
+  try {
+    toast('Optimizando imagen…');
+    const data = await comprimirImagen(archivo, 1000, 0.8);
+    const nombre = String(archivo.name || 'Inspiración').replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').slice(0, 60) || 'Inspiración';
+    state.galeria.push({ id: uid(), nombre, categoria: galeriaCategoria, data, createdAt: Date.now() });
+    if (!LS.set('galeria', state.galeria)) {
+      state.galeria.pop();
+      return;
+    }
+    renderInspiracion();
+    renderRespaldo();
+    toast('Foto añadida a tu galería local.', 'ok');
+  } catch (e) {
+    toast(e.message || 'No se pudo guardar la foto.', 'err');
+  }
+}
+
+async function eliminarFotoGaleria(id) {
+  const foto = state.galeria.find(f => f.id === id);
+  if (!foto) return;
+  const ok = await confirmarAccion('Se quitará «' + foto.nombre + '» de la galería local. Si era tu retrato, el dashboard volverá a la imagen por defecto.', 'Quitar foto');
+  if (!ok) return;
+  if (state.retrato === foto.data) quitarRetrato(true);
+  state.galeria = state.galeria.filter(f => f.id !== id);
+  guardarGaleria();
+  renderInspiracion();
+  renderRespaldo();
+  toast('Foto eliminada.', 'ok');
+}
+
+function usarComoRetrato(src) {
+  if (!src) return;
+  if (src === IMAGENES.hajime) {
+    quitarRetrato();
+    return;
+  }
+  if (!LS.set('retrato', src)) return;
+  state.retrato = src;
+  aplicarRetrato();
+  renderInspiracion();
+  renderRespaldo();
+  toast('Retrato del dashboard actualizado.', 'ok');
+}
+
+function usarDesdeGaleria(id) {
+  const foto = fotoPorId(id);
+  if (!foto) return;
+  usarComoRetrato(foto.src);
+}
+
+function quitarRetrato(silencioso = false) {
+  state.retrato = null;
+  LS.del('retrato');
+  aplicarRetrato();
+  renderInspiracion();
+  renderRespaldo();
+  if (!silencioso) toast('Retrato restaurado a la imagen del sistema.', 'ok');
+}
+
+function abrirLightbox(id) {
+  const foto = fotoPorId(id);
+  if (!foto) return;
+  fotoLightboxId = id;
+  const img = $('#lightboxImg');
+  const titulo = $('#lightboxTitulo');
+  const etiqueta = $('#lightboxEtiqueta');
+  const btnRetrato = $('#lightboxRetrato');
+  const btnBorrar = $('#lightboxBorrar');
+  if (img) { img.src = foto.src; img.alt = foto.nombre; }
+  if (titulo) titulo.textContent = foto.nombre;
+  if (etiqueta) etiqueta.textContent = foto.categoria + (foto.custom ? ' · guardada en este dispositivo' : ' · incluida en el sistema');
+  if (btnRetrato) btnRetrato.hidden = retratoActivo() === foto.src;
+  if (btnBorrar) btnBorrar.hidden = !foto.custom;
+  abrirModal($('#modalImagen'));
+}
+
+function cerrarLightbox() {
+  fotoLightboxId = null;
+  cerrarModal($('#modalImagen'));
+}
+
+async function quitarFotoDesdeLightbox() {
+  const id = fotoLightboxId;
+  if (!id) return;
+  cerrarLightbox();
+  await eliminarFotoGaleria(id);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   11 · POMODORO
+   ════════════════════════════════════════════════════════════════ */
+function duracionModo(modo, p = state.pomodoro) {
+  if (modo === 'short') return p.short * 60000;
+  if (modo === 'long') return p.long * 60000;
+  return p.work * 60000;
+}
+
+function aplicarFormularioPomodoro() {
+  const w = $('#pomoWork'); if (w) w.value = state.pomodoro.work;
+  const s = $('#pomoShort'); if (s) s.value = state.pomodoro.short;
+  const l = $('#pomoLong'); if (l) l.value = state.pomodoro.long;
+}
+
+function pintarPomodoro() {
+  const p = state.pomodoro;
+  const dur = duracionModo(p.mode, p);
+  const restante = Math.max(0, Math.min(p.remaining, dur));
+
+  const tiempo = $('#pomoTiempo');
+  if (tiempo) tiempo.textContent = formatoMMSS(restante);
+
+  ajustarAnillo($('#pomoRing'), 1 - restante / dur);
+
+  const estado = $('#pomoEstado');
+  if (estado) {
+    estado.textContent = p.running ? 'En curso' : (restante >= dur - 60 ? 'Listo para el combate' : 'En pausa');
+    estado.classList.toggle('is-live', p.running);
+  }
+
+  $$('.modo-btn').forEach(btn => {
+    const activo = btn.dataset.modo === p.mode;
+    btn.classList.toggle('active', activo);
+    btn.setAttribute('aria-pressed', String(activo));
+  });
+
+  const toggle = $('#btnPomoToggle');
+  if (toggle) {
+    toggle.innerHTML = p.running
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 5v14M16 5v14" stroke-linecap="round"/></svg> Pausar'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 5l11 7-11 7V5z" stroke-linejoin="round"/></svg> Iniciar';
+  }
+
+  const sesiones = sesionesHoy();
+  const num = $('#pomoSesiones'); if (num) num.textContent = sesiones;
+  const ciclo = sesiones % 4 === 0 && sesiones > 0 ? 4 : sesiones % 4;
+  const cicloTxt = $('#pomoCiclo');
+  if (cicloTxt) cicloTxt.textContent = 'Ciclo ' + ciclo + ' de 4';
+  $$('#puntosCiclo i').forEach((punto, i) => punto.classList.toggle('on', i < ciclo));
+
+  const lateral = $('#lateralSesiones');
+  if (lateral) lateral.textContent = sesiones + (sesiones === 1 ? ' sesión hoy' : ' sesiones hoy');
+
+  pintarValoresRapidos();
+
+  // Título de la pestaña como HUD
+  const titulo = p.running ? formatoMMSS(restante) + ' · ' + MODOS[p.mode].nombre + ' — Arifureta HUD' : 'Arifureta HUD // Sistema Personal';
+  if (titulo !== ultimoTituloDoc) {
+    document.title = titulo;
+    ultimoTituloDoc = titulo;
+  }
+}
+
+function alternarPomodoro() {
+  asegurarAudio();
+  const p = state.pomodoro;
+  if (p.running) {
+    p.remaining = Math.max(0, p.endAt - Date.now());
+    p.running = false;
+    p.endAt = null;
+    toast('Enfoque en pausa. El abismo espera.', '');
+  } else {
+    if (p.remaining <= 500) p.remaining = duracionModo(p.mode, p);
+    p.endAt = Date.now() + p.remaining;
+    p.running = true;
+    toast(MODOS[p.mode].nombre + ' iniciado. Sin distracciones.', 'ok');
+  }
+  guardarPomodoro();
+  pintarPomodoro();
+  actualizarDashboard();
+}
+
+function reiniciarPomodoro() {
+  const p = state.pomodoro;
+  p.running = false;
+  p.endAt = null;
+  p.remaining = duracionModo(p.mode, p);
+  guardarPomodoro();
+  pintarPomodoro();
+  actualizarDashboard();
+  toast('Temporizador reiniciado.');
+}
+
+function cambiarModoPomodoro(modo) {
+  if (!MODOS[modo]) return;
+  const p = state.pomodoro;
+  p.mode = modo;
+  p.running = false;
+  p.endAt = null;
+  p.remaining = duracionModo(modo, p);
+  guardarPomodoro();
+  pintarPomodoro();
+  actualizarDashboard();
+  toast('Modo: ' + MODOS[modo].nombre + '.');
+}
+
+function tickPomodoro() {
+  const p = state.pomodoro;
+  if (!p.running) return;
+  const restante = p.endAt - Date.now();
+  if (restante <= 0) {
+    completarPomodoro();
+    return;
+  }
+  p.remaining = restante;
+  pintarPomodoro();
+}
+
+function completarPomodoro() {
+  const p = state.pomodoro;
+  const eraEnfoque = p.mode === 'focus';
+  const fin = new Date(p.endAt || Date.now());
+  p.running = false;
+  p.endAt = null;
+
+  if (eraEnfoque) {
+    const dia = hoyISO(fin);
+    p.sessions[dia] = (parseInt(p.sessions[dia], 10) || 0) + 1;
+    const total = p.sessions[dia];
+    const descanso = total % 4 === 0 ? 'long' : 'short';
+    p.mode = descanso;
+    p.remaining = duracionModo(descanso, p);
+    sonarAlarma();
+    toast('Sesión completada. ' + (descanso === 'long' ? 'Descanso largo desbloqueado.' : 'Toma un descanso corto.'), 'ok');
+  } else {
+    p.mode = 'focus';
+    p.remaining = duracionModo('focus', p);
+    sonarAlarma();
+    toast('Descanso terminado. Vuelve al enfoque.', 'ok');
+  }
+  guardarPomodoro();
+  pintarPomodoro();
+  actualizarDashboard();
+}
+
+function actualizarConfigPomodoro() {
+  const p = state.pomodoro;
+  const w = parseInt($('#pomoWork') && $('#pomoWork').value, 10);
+  const s = parseInt($('#pomoShort') && $('#pomoShort').value, 10);
+  const l = parseInt($('#pomoLong') && $('#pomoLong').value, 10);
+  p.work = clamp(Number.isFinite(w) ? w : p.work, 1, 180);
+  p.short = clamp(Number.isFinite(s) ? s : p.short, 1, 60);
+  p.long = clamp(Number.isFinite(l) ? l : p.long, 1, 90);
+  aplicarFormularioPomodoro();
+  if (!p.running) {
+    p.remaining = duracionModo(p.mode, p);
+  }
+  guardarPomodoro();
+  pintarPomodoro();
+  actualizarDashboard();
+}
+
+/* ════════════════════════════════════════════════════════════════
+   12 · CRONÓMETRO Y VUELTAS
+   ════════════════════════════════════════════════════════════════ */
+function tiempoCrono() {
+  const t = state.cronometro;
+  return Math.max(0, t.base + (t.startedAt ? Date.now() - t.startedAt : 0));
+}
+
+function pintarCrono() {
+  const t = state.cronometro;
+  const ms = tiempoCrono();
+  const texto = formatoCrono(ms);
+  const display = $('#cronoDisplay');
+  if (display) {
+    const corte = texto.lastIndexOf('.');
+    if (corte > -1) {
+      display.innerHTML = esc(texto.slice(0, corte)) + '<span class="ms">' + esc(texto.slice(corte)) + '</span>';
+    } else {
+      display.textContent = texto;
+    }
+  }
+
+  const estado = $('#cronoEstado');
+  if (estado) {
+    estado.textContent = t.startedAt ? 'Sistema en movimiento' : (ms > 0 ? 'Tiempo en pausa' : 'Sistema detenido');
+    estado.classList.toggle('is-live', Boolean(t.startedAt));
+  }
+
+  const btn = $('#btnCrono');
+  if (btn) {
+    btn.innerHTML = t.startedAt
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 5v14M16 5v14" stroke-linecap="round"/></svg> Pausar'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 5l11 7-11 7V5z" stroke-linejoin="round"/></svg> Iniciar';
+  }
+  const btnVuelta = $('#btnVuelta');
+  if (btnVuelta) btnVuelta.disabled = !t.startedAt;
+
+  pintarValoresRapidos();
+}
+
+function bucleCrono() {
+  if (state.cronometro.startedAt && !document.hidden) pintarCrono();
+  requestAnimationFrame(bucleCrono);
+}
+
+function alternarCrono() {
+  const t = state.cronometro;
+  if (t.startedAt) {
+    t.base += Date.now() - t.startedAt;
+    t.startedAt = null;
+    toast('Cronómetro en pausa.');
+  } else {
+    t.startedAt = Date.now();
+    toast('Cronómetro en marcha.', 'ok');
+  }
+  guardarCrono();
+  pintarCrono();
+}
+
+function registrarVuelta() {
+  const t = state.cronometro;
+  if (!t.startedAt) return;
+  const total = tiempoCrono();
+  const anterior = t.laps.length ? t.laps[t.laps.length - 1].total : 0;
+  const parcial = Math.max(0, total - anterior);
+  t.laps.push({ parcial, total });
+  guardarCrono();
+  renderLaps();
+  pintarCrono();
+  toast('Vuelta ' + pad(t.laps.length) + ' registrada.');
+}
+
+async function reiniciarCrono() {
+  const t = state.cronometro;
+  if (tiempoCrono() > 3000 || t.laps.length) {
+    const ok = await confirmarAccion('Se borrará el tiempo actual y todas las vueltas registradas. Esta acción no se puede deshacer.', 'Reiniciar');
+    if (!ok) return;
+  }
+  state.cronometro = { base: 0, startedAt: null, laps: [] };
+  cronoSesionNum += 1;
+  const sesion = $('#cronoSesion');
+  if (sesion) sesion.textContent = '#' + String(cronoSesionNum).padStart(3, '0');
+  guardarCrono();
+  renderLaps();
+  pintarCrono();
+  toast('Cronómetro reiniciado.');
+}
+
+function renderLaps() {
+  const lista = $('#listaVueltas');
+  const vacio = $('#vueltasVacio');
+  const t = state.cronometro;
+  if (!lista) return;
+
+  if (!t.laps.length) {
+    lista.innerHTML = '';
+    if (vacio) vacio.hidden = false;
+  } else {
+    if (vacio) vacio.hidden = true;
+    const filas = t.laps.map((lap, i) => ({ lap, n: i + 1 })).reverse();
+    lista.innerHTML = filas.map(fila =>
+      '<li>' +
+        '<span class="num">#' + pad(fila.n) + '</span>' +
+        '<span class="parcial">+' + esc(formatoCrono(fila.lap.parcial)) + '</span>' +
+        '<span class="total">' + esc(formatoCrono(fila.lap.total)) + '</span>' +
+      '</li>'
+    ).join('');
+  }
+
+  const contador = $('#cronoVueltas');
+  if (contador) contador.textContent = t.laps.length;
+  const ultima = $('#cronoUltima');
+  if (ultima) ultima.textContent = t.laps.length ? formatoCrono(t.laps[t.laps.length - 1].parcial) : '—';
+}
+
+function exportarVueltas() {
+  const t = state.cronometro;
+  if (!t.laps.length) {
+    toast('No hay vueltas para exportar.', 'err');
+    return;
+  }
+  const lineas = [];
+  lineas.push('ARIFURETA HUD — REGISTRO DE VUELTAS');
+  lineas.push('Fecha: ' + new Date().toLocaleString('es'));
+  lineas.push('Tiempo total: ' + formatoCrono(tiempoCrono()));
+  lineas.push('');
+  lineas.push('VUELTA   PARCIAL        TOTAL');
+  lineas.push('---------------------------------');
+  t.laps.forEach((lap, i) => {
+    lineas.push('#' + pad(i + 1) + '      +' + formatoCrono(lap.parcial) + '      ' + formatoCrono(lap.total));
+  });
+  lineas.push('');
+  lineas.push('Forjado en el abismo, no en la comodidad.');
+  descargarBlob(new Blob([lineas.join('\r\n')], { type: 'text/plain;charset=utf-8' }), 'arifureta-vueltas-' + hoyISO() + '.txt');
+  toast('Vueltas exportadas.', 'ok');
+}
+
+/* ════════════════════════════════════════════════════════════════
+   13 · LIBRETA DE NOTAS
+   ════════════════════════════════════════════════════════════════ */
+function claseTag(etiqueta) {
+  return 'tag tag--' + String(etiqueta || 'NOTA').toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z]/g, '');
+}
+
+function notasFiltradas() {
+  const q = notaBusqueda.trim().toLowerCase();
+  const ordenadas = state.notas.slice().sort((a, b) => b.updatedAt - a.updatedAt);
+  if (!q) return ordenadas;
+  return ordenadas.filter(n => (n.titulo + ' ' + n.contenido + ' ' + n.etiqueta).toLowerCase().includes(q));
+}
+
+function renderNotas() {
+  const grid = $('#notasGrid');
+  const vacio = $('#notasVacio');
+  const contador = $('#notasContador');
+  if (!grid) return;
+
+  const lista = notasFiltradas();
+  const total = state.notas.length;
+  if (contador) contador.textContent = notaBusqueda.trim()
+    ? lista.length + ' de ' + total + ' notas'
+    : total + (total === 1 ? ' nota' : ' notas');
+
+  if (!lista.length) {
+    grid.innerHTML = '';
+    if (vacio) {
+      vacio.hidden = false;
+      vacio.innerHTML = notaBusqueda.trim()
+        ? '<strong>Sin coincidencias</strong>Ningún registro coincide con «' + esc(notaBusqueda) + '».'
+        : '<strong>La libreta está en silencio</strong>Crea tu primera nota. Las ideas no esperan a que estés listo.';
+    }
+    return;
+  }
+  if (vacio) vacio.hidden = true;
+
+  grid.innerHTML = lista.map(n => {
+    const titulo = n.titulo || 'Sin título';
+    const contenido = n.contenido || 'Sin contenido.';
+    const fecha = fechaLegible(hoyISO(new Date(n.updatedAt)));
+    return '<article class="nota-card" data-action="note-open" data-id="' + esc(n.id) + '" tabindex="0" role="button" aria-label="Abrir nota ' + esc(titulo) + '">' +
+      '<div class="nota-card__top">' +
+        '<span class="' + claseTag(n.etiqueta) + '">' + esc(n.etiqueta) + '</span>' +
+        '<span class="nota-card__fecha">' + esc(fecha) + '</span>' +
+      '</div>' +
+      '<h3>' + esc(titulo) + '</h3>' +
+      '<p>' + esc(contenido) + '</p>' +
+      '<div class="nota-card__pie">' +
+        '<span>' + (n.contenido.length ? n.contenido.length + ' caracteres' : 'Vacía') + '</span>' +
+        '<button class="nota-card__borrar" data-action="note-delete" data-id="' + esc(n.id) + '" aria-label="Eliminar nota ' + esc(titulo) + '">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M9 7V4h6v3M7 7l1 14h8l1-14"/></svg>' +
+        '</button>' +
+      '</div>' +
+    '</article>';
+  }).join('');
+}
+
+function notaActual() {
+  return state.notas.find(n => n.id === notaAbiertaId) || null;
+}
+
+function abrirNota(id) {
+  let nota = id ? state.notas.find(n => n.id === id) : null;
+  if (id && !nota) return;
+
+  if (!nota) {
+    nota = {
+      id: uid(), titulo: '', contenido: '', etiqueta: 'NOTA',
+      createdAt: Date.now(), updatedAt: Date.now()
+    };
+    state.notas.unshift(nota);
+    guardarNotas();
+    renderNotas();
+    actualizarDashboard();
+  }
+  notaAbiertaId = nota.id;
+
+  const titulo = $('#notaTitulo');
+  const contenido = $('#notaContenido');
+  const etiqueta = $('#notaEtiqueta');
+  if (titulo) titulo.value = nota.titulo;
+  if (contenido) contenido.value = nota.contenido;
+  if (etiqueta) etiqueta.value = ETIQUETAS.includes(nota.etiqueta) ? nota.etiqueta : 'NOTA';
+
+  estadoNota('Guardado', false);
+  actualizarMetaNota();
+  abrirModal($('#modalNota'));
+  if (titulo) setTimeout(() => titulo.focus(), 120);
+}
+
+function sincronizarNotaDesdeInputs() {
+  const nota = notaActual();
+  if (!nota) return null;
+  const titulo = $('#notaTitulo');
+  const contenido = $('#notaContenido');
+  const etiqueta = $('#notaEtiqueta');
+  nota.titulo = titulo ? titulo.value : nota.titulo;
+  nota.contenido = contenido ? contenido.value : nota.contenido;
+  if (etiqueta && ETIQUETAS.includes(etiqueta.value)) nota.etiqueta = etiqueta.value;
+  return nota;
+}
+
+function estadoNota(texto, guardando) {
+  const el = $('#estadoGuardado');
+  if (!el) return;
+  el.classList.toggle('guardando', Boolean(guardando));
+  const span = el.querySelector('span');
+  if (span) span.textContent = texto;
+}
+
+function actualizarMetaNota() {
+  const nota = notaActual();
+  const meta = $('#notaMeta');
+  if (!meta) return;
+  if (!nota) { meta.textContent = '—'; return; }
+  const fecha = new Date(nota.updatedAt);
+  const hora = new Intl.DateTimeFormat('es', { hour: '2-digit', minute: '2-digit' }).format(fecha);
+  meta.textContent = 'Editada ' + fechaLegible(hoyISO(fecha)) + ' · ' + hora + ' · ' + nota.contenido.length + ' caracteres';
+}
+
+function alEscribirNota() {
+  const nota = sincronizarNotaDesdeInputs();
+  if (!nota) return;
+  nota.updatedAt = Date.now();
+  estadoNota('Guardando…', true);
+  clearTimeout(notaTimer);
+  notaTimer = setTimeout(() => {
+    guardarNotas();
+    renderNotas();
+    actualizarDashboard();
+    actualizarMetaNota();
+    estadoNota('Guardado', false);
+  }, 350);
+}
+
+function cerrarNota() {
+  clearTimeout(notaTimer);
+  const nota = sincronizarNotaDesdeInputs();
+  if (nota) {
+    const vacia = !nota.titulo.trim() && !nota.contenido.trim();
+    if (vacia) {
+      state.notas = state.notas.filter(n => n.id !== nota.id);
+    } else {
+      nota.updatedAt = Date.now();
+      guardarNotas();
+    }
+  }
+  notaAbiertaId = null;
+  cerrarModal($('#modalNota'));
+  renderNotas();
+  actualizarDashboard();
+}
+
+async function eliminarNota(id) {
+  const nota = state.notas.find(n => n.id === id);
+  if (!nota) return;
+  const ok = await confirmarAccion('La nota «' + (nota.titulo || 'Sin título') + '» se eliminará de forma permanente.', 'Eliminar');
+  if (!ok) return;
+  state.notas = state.notas.filter(n => n.id !== id);
+  guardarNotas();
+  if (notaAbiertaId === id) {
+    clearTimeout(notaTimer);
+    notaAbiertaId = null;
+    cerrarModal($('#modalNota'));
+  }
+  renderNotas();
+  actualizarDashboard();
+  toast('Nota eliminada.', 'ok');
+}
+
+async function eliminarNotaAbierta() {
+  if (!notaAbiertaId) return;
+  const id = notaAbiertaId;
+  await eliminarNota(id);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   14 · PLAN DE METAS
+   ════════════════════════════════════════════════════════════════ */
+function claseCategoria(categoria) {
+  return 'meta-badge meta-badge--' + String(categoria || 'Personal').toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z]/g, '');
+}
+
+function renderMetas() {
+  const grid = $('#metasGrid');
+  const vacio = $('#metasVacio');
+  if (!grid) return;
+
+  const activas = metasActivas();
+  const completadas = state.metas.filter(m => m.completada);
+  const prom = activas.length ? Math.round(activas.reduce((s, m) => s + progresoMeta(m), 0) / activas.length) : 0;
+
+  const setTexto = (id, valor) => { const el = $(id); if (el) el.textContent = valor; };
+  setTexto('#statActivas', activas.length);
+  setTexto('#statCompletadas', completadas.length);
+  setTexto('#statRiesgo', metasEnRiesgo());
+  setTexto('#statPromedio', prom + '%');
+
+  $$('.filtro').forEach(btn => btn.classList.toggle('active', btn.dataset.filtro === metaFiltro));
+
+  let lista;
+  if (metaFiltro === 'activas') lista = activas;
+  else if (metaFiltro === 'completadas') lista = completadas;
+  else lista = state.metas.slice();
+
+  lista = lista.sort((a, b) => {
+    if (a.completada !== b.completada) return a.completada ? 1 : -1;
+    return String(a.fecha || '9999').localeCompare(String(b.fecha || '9999'));
+  });
+
+  if (!lista.length) {
+    grid.innerHTML = '';
+    if (vacio) vacio.hidden = false;
+  } else {
+    if (vacio) vacio.hidden = true;
+    grid.innerHTML = lista.map(tarjetaMeta).join('');
+  }
+
+  renderTimeline();
+}
+
+function tarjetaMeta(m) {
+  const pr = progresoMeta(m);
+  const d = diasRestantes(m.fecha);
+  const riesgo = !m.completada && d !== null && (d < 0 || (d <= 7 && pr < 50));
+  const claseDias = d === null ? '' : d < 0 ? 'dias--vencida' : d <= 7 ? 'dias--pronto' : 'dias--ok';
+  const hitos = m.hitos || [];
+  const hechos = hitos.filter(h => h.hecho).length;
+
+  const listaHitos = hitos.length
+    ? '<ul class="hitos">' + hitos.map(h =>
+        '<li class="hito ' + (h.hecho ? 'hecho' : '') + '">' +
+          '<input type="checkbox" data-action="hito-toggle" data-meta="' + esc(m.id) + '" data-hito="' + esc(h.id) + '" ' + (h.hecho ? 'checked' : '') + ' aria-label="' + esc(h.texto) + '">' +
+          '<span>' + esc(h.texto) + '</span>' +
+        '</li>'
+      ).join('') + '</ul>'
+    : '<p class="sin-hitos">Sin hitos. Edita la meta para trazar el camino.</p>';
+
+  return '<article class="panel meta-card ' + (m.completada ? 'is-done' : '') + '">' +
+    '<div class="meta-card__top">' +
+      '<span class="' + claseCategoria(m.categoria) + '">' + esc(m.categoria) + '</span>' +
+      (m.completada ? '<span class="meta-completada-tag">Completada</span>' : '') +
+      '<span class="prio prio--' + esc(String(m.prioridad).toLowerCase()) + '">Prioridad ' + esc(m.prioridad) + '</span>' +
+    '</div>' +
+    '<h3>' + esc(m.titulo) + '</h3>' +
+    (m.descripcion ? '<p class="meta-card__desc">' + esc(m.descripcion) + '</p>' : '') +
+    '<div class="meta-fechas">' +
+      '<span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="1"/><path d="M3 10h18M8 3v4M16 3v4" stroke-linecap="round"/></svg>' + esc(fechaLegible(m.fecha)) + '</span>' +
+      '<span class="' + claseDias + '">' + esc(textoDias(m.fecha)) + '</span>' +
+    '</div>' +
+    '<div>' +
+      '<div class="barra"><div class="barra__relleno ' + (riesgo ? 'barra__relleno--riesgo' : '') + '" style="width:' + pr + '%"></div></div>' +
+      '<div class="barra__labels" style="margin-top:5px">' +
+        '<span>' + (hitos.length ? hechos + '/' + hitos.length + ' hitos' : 'Sin hitos') + '</span>' +
+        '<span>' + pr + '%</span>' +
+      '</div>' +
+    '</div>' +
+    listaHitos +
+    '<div class="meta-acciones">' +
+      '<button class="btn btn--fantasma" data-action="meta-editar" data-id="' + esc(m.id) + '">Editar</button>' +
+      '<button class="btn ' + (m.completada ? 'btn--fantasma' : 'btn--cian') + '" data-action="meta-completar" data-id="' + esc(m.id) + '">' + (m.completada ? 'Reabrir' : 'Completar') + '</button>' +
+      '<button class="btn btn--sangre" data-action="meta-eliminar" data-id="' + esc(m.id) + '">Eliminar</button>' +
+    '</div>' +
+  '</article>';
+}
+
+function renderTimeline() {
+  const contenedor = $('#timeline');
+  const vacio = $('#timelineVacio');
+  if (!contenedor) return;
+
+  const activas = metasActivas()
+    .filter(m => m.fecha)
+    .sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)));
+
+  if (!activas.length) {
+    contenedor.innerHTML = '';
+    if (vacio) vacio.hidden = false;
+    return;
+  }
+  if (vacio) vacio.hidden = true;
+
+  contenedor.innerHTML = activas.map(m => {
+    const d = diasRestantes(m.fecha);
+    return '<div class="timeline__item ' + (d !== null && d < 0 ? 'vencida' : '') + '">' +
+      '<div class="timeline__fecha">' + esc(fechaLegible(m.fecha, true)) + ' · ' + esc(textoDias(m.fecha)) + '</div>' +
+      '<div class="timeline__titulo">' + esc(m.titulo) + '</div>' +
+      '<div class="timeline__meta">' +
+        '<div class="barra" style="flex:1;max-width:170px"><div class="barra__relleno" style="width:' + progresoMeta(m) + '%"></div></div>' +
+        '<span>' + progresoMeta(m) + '%</span>' +
+        '<span class="text-muted">' + esc(m.categoria) + '</span>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function abrirModalMeta(id) {
+  const m = id ? state.metas.find(x => x.id === id) : null;
+  metaEditandoId = m ? m.id : null;
+  const tituloModal = $('#modalMetaTitulo');
+  if (tituloModal) tituloModal.textContent = m ? 'Editar meta' : 'Nueva meta';
+
+  $('#metaTitulo').value = m ? m.titulo : '';
+  $('#metaDescripcion').value = m ? m.descripcion : '';
+  $('#metaFecha').value = m ? m.fecha : sumarDiasISO(14);
+  $('#metaCategoria').value = m ? m.categoria : 'Personal';
+  $('#metaPrioridad').value = m ? m.prioridad : 'Media';
+  const hitoInput = $('#hitoInput');
+  if (hitoInput) hitoInput.value = '';
+
+  hitosDraft = m ? m.hitos.map(h => ({ id: h.id, texto: h.texto, hecho: Boolean(h.hecho) })) : [];
+  renderHitosDraft();
+  abrirModal($('#modalMeta'));
+  setTimeout(() => { if ($('#metaTitulo')) $('#metaTitulo').focus(); }, 120);
+}
+
+function cerrarModalMeta() {
+  cerrarModal($('#modalMeta'));
+  metaEditandoId = null;
+  hitosDraft = [];
+}
+
+function renderHitosDraft() {
+  const lista = $('#listaHitosDraft');
+  if (!lista) return;
+  if (!hitosDraft.length) {
+    lista.innerHTML = '<li class="sin-hitos">Aún no has añadido hitos.</li>';
+    return;
+  }
+  lista.innerHTML = hitosDraft.map(h =>
+    '<li class="hito-draft">' +
+      '<span class="check">' + (h.hecho ? '✓' : '◇') + '</span>' +
+      '<span class="txt">' + esc(h.texto) + '</span>' +
+      '<button type="button" data-action="hito-draft-eliminar" data-id="' + esc(h.id) + '" aria-label="Quitar hito">×</button>' +
+    '</li>'
+  ).join('');
+}
+
+function agregarHitoDraft() {
+  const input = $('#hitoInput');
+  if (!input) return;
+  const texto = input.value.trim();
+  if (!texto) {
+    toast('Escribe el texto del hito.', 'err');
+    input.focus();
+    return;
+  }
+  if (hitosDraft.length >= 30) {
+    toast('Máximo 30 hitos por meta.', 'err');
+    return;
+  }
+  hitosDraft.push({ id: uid(), texto: texto.slice(0, 160), hecho: false });
+  input.value = '';
+  renderHitosDraft();
+  input.focus();
+}
+
+function guardarMeta() {
+  const titulo = ($('#metaTitulo') && $('#metaTitulo').value || '').trim();
+  const descripcion = ($('#metaDescripcion') && $('#metaDescripcion').value || '').trim();
+  const fecha = $('#metaFecha') && $('#metaFecha').value;
+  const categoria = $('#metaCategoria') && $('#metaCategoria').value;
+  const prioridad = $('#metaPrioridad') && $('#metaPrioridad').value;
+
+  if (!titulo) {
+    toast('La meta necesita un título.', 'err');
+    if ($('#metaTitulo')) $('#metaTitulo').focus();
+    return;
+  }
+  if (!fecha) {
+    toast('Define una fecha límite.', 'err');
+    if ($('#metaFecha')) $('#metaFecha').focus();
+    return;
+  }
+
+  if (metaEditandoId) {
+    const m = state.metas.find(x => x.id === metaEditandoId);
+    if (m) {
+      m.titulo = titulo.slice(0, 160);
+      m.descripcion = descripcion.slice(0, 1200);
+      m.fecha = fecha;
+      m.categoria = CATEGORIAS.includes(categoria) ? categoria : 'Personal';
+      m.prioridad = PRIORIDADES.includes(prioridad) ? prioridad : 'Media';
+      m.hitos = hitosDraft.map(h => ({ id: h.id, texto: h.texto, hecho: Boolean(h.hecho) }));
+      m.updatedAt = Date.now();
+    }
+    toast('Meta actualizada.', 'ok');
+  } else {
+    state.metas.unshift({
+      id: uid(),
+      titulo: titulo.slice(0, 160),
+      descripcion: descripcion.slice(0, 1200),
+      fecha,
+      categoria: CATEGORIAS.includes(categoria) ? categoria : 'Personal',
+      prioridad: PRIORIDADES.includes(prioridad) ? prioridad : 'Media',
+      hitos: hitosDraft.map(h => ({ id: h.id, texto: h.texto, hecho: Boolean(h.hecho) })),
+      completada: false,
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    });
+    toast('Meta forjada. Ahora muévete.', 'ok');
+  }
+  guardarMetas();
+  cerrarModalMeta();
+  renderMetas();
+  actualizarDashboard();
+}
+
+function alternarMetaCompletada(id) {
+  const m = state.metas.find(x => x.id === id);
+  if (!m) return;
+  m.completada = !m.completada;
+  m.updatedAt = Date.now();
+  guardarMetas();
+  renderMetas();
+  actualizarDashboard();
+  toast(m.completada ? 'Meta completada. Otra cima conquistada.' : 'Meta reabierta.', 'ok');
+}
+
+async function eliminarMeta(id) {
+  const m = state.metas.find(x => x.id === id);
+  if (!m) return;
+  const ok = await confirmarAccion('La meta «' + m.titulo + '» y sus hitos se eliminarán de forma permanente.', 'Eliminar');
+  if (!ok) return;
+  state.metas = state.metas.filter(x => x.id !== id);
+  guardarMetas();
+  renderMetas();
+  actualizarDashboard();
+  toast('Meta eliminada.', 'ok');
+}
+
+function alternarHito(metaId, hitoId, valor) {
+  const m = state.metas.find(x => x.id === metaId);
+  if (!m) return;
+  const h = m.hitos.find(x => x.id === hitoId);
+  if (!h) return;
+  h.hecho = Boolean(valor);
+  m.updatedAt = Date.now();
+  guardarMetas();
+  renderMetas();
+  actualizarDashboard();
+}
+
+function cambiarFiltroMeta(filtro) {
+  metaFiltro = ['todas', 'activas', 'completadas'].includes(filtro) ? filtro : 'todas';
+  renderMetas();
+}
+
+/* ════════════════════════════════════════════════════════════════
+   15 · MODALES Y CONFIRMACIONES
+   ════════════════════════════════════════════════════════════════ */
+function abrirModal(modal) {
+  if (!modal) return;
+  modal.classList.add('open');
+  actualizarBloqueoScroll();
+}
+
+function cerrarModal(modal) {
+  if (!modal) return;
+  modal.classList.remove('open');
+  actualizarBloqueoScroll();
+}
+
+function actualizarBloqueoScroll() {
+  const hayModal = $$('.modal.open').length > 0;
+  document.body.style.overflow = hayModal ? 'hidden' : '';
+}
+
+function confirmarAccion(texto, etiqueta) {
+  return new Promise(resolve => {
+    if (confirmResolver) {
+      const anterior = confirmResolver;
+      confirmResolver = null;
+      anterior(false);
+    }
+    const modal = $('#modalConfirm');
+    const cuerpo = $('#confirmTexto');
+    const boton = $('#confirmSi');
+    if (cuerpo) cuerpo.textContent = texto;
+    if (boton) boton.textContent = etiqueta || 'Confirmar';
+    confirmResolver = resolve;
+    abrirModal(modal);
+    setTimeout(() => { if (boton) boton.focus(); }, 100);
+  });
+}
+
+function resolverConfirmacion(valor) {
+  const resolver = confirmResolver;
+  confirmResolver = null;
+  cerrarModal($('#modalConfirm'));
+  if (resolver) resolver(Boolean(valor));
+}
+
+/* ════════════════════════════════════════════════════════════════
+   16 · EXPORTAR / IMPORTAR RESPALDO
+   ════════════════════════════════════════════════════════════════ */
+function construirRespaldo() {
+  const p = state.pomodoro;
+  const t = state.cronometro;
+  return {
+    app: 'Arifureta HUD',
+    version: 2,
+    exportedAt: new Date().toISOString(),
+    data: {
+      notas: state.notas,
+      metas: state.metas,
+      prefs: state.prefs,
+      retrato: state.retrato,
+      galeria: state.galeria,
+      pomodoro: Object.assign({}, p, {
+        running: false,
+        endAt: null,
+        remaining: p.running ? Math.max(0, p.endAt - Date.now()) : p.remaining
+      }),
+      cronometro: {
+        base: tiempoCrono(),
+        startedAt: null,
+        laps: t.laps
+      }
+    }
+  };
+}
+
+function marcarRespaldo() {
+  state.prefs.lastBackup = new Date().toISOString();
+  guardarPrefs();
+  renderRespaldo();
+}
+
+function exportarTodo() {
+  descargarBlob(
+    new Blob([JSON.stringify(construirRespaldo(), null, 2)], { type: 'application/json;charset=utf-8' }),
+    'arifureta-respaldo-' + hoyISO() + '.json'
+  );
+  marcarRespaldo();
+  toast('Respaldo exportado. Guárdalo fuera del navegador.', 'ok');
+}
+
+async function copiarRespaldo() {
+  const texto = JSON.stringify(construirRespaldo(), null, 2);
+  let copiado = false;
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(texto);
+      copiado = true;
+    }
+  } catch (e) { /* permiso denegado: probar el método clásico */ }
+  if (!copiado) {
+    try {
+      const area = document.createElement('textarea');
+      area.value = texto;
+      area.style.position = 'fixed';
+      area.style.opacity = '0';
+      document.body.appendChild(area);
+      area.select();
+      copiado = document.execCommand('copy');
+      area.remove();
+    } catch (e) { copiado = false; }
+  }
+  if (copiado) {
+    marcarRespaldo();
+    toast('Respaldo copiado al portapapeles.', 'ok');
+  } else {
+    toast('No se pudo copiar. Usa «Exportar JSON».', 'err');
+  }
+}
+
+function pedirImportacion() {
+  const input = $('#inputImport');
+  if (input) { input.value = ''; input.click(); }
+}
+
+function manejarImportacion(archivo) {
+  if (!archivo) return;
+  const lector = new FileReader();
+  lector.onerror = () => toast('No se pudo leer el archivo.', 'err');
+  lector.onload = async () => {
+    let datos;
+    try {
+      const parseado = JSON.parse(String(lector.result || ''));
+      datos = parseado && parseado.data && typeof parseado.data === 'object' ? parseado.data : parseado;
+      if (!datos || typeof datos !== 'object' || Array.isArray(datos)) throw new Error('Formato no válido');
+      const claves = ['notas', 'metas', 'pomodoro', 'cronometro', 'prefs', 'galeria', 'retrato'];
+      if (!claves.some(k => k in datos)) throw new Error('No contiene datos compatibles');
+    } catch (e) {
+      toast('Importación fallida: ' + e.message, 'err');
+      return;
+    }
+
+    const ok = await confirmarAccion('Los datos actuales serán reemplazados por el contenido del respaldo. La página se recargará al terminar.', 'Importar');
+    if (!ok) return;
+
+    try {
+      if (Array.isArray(datos.notas)) {
+        state.notas = datos.notas.map(normalizarNota).filter(n => n.titulo || n.contenido);
+      }
+      if (Array.isArray(datos.metas)) {
+        state.metas = datos.metas.map(normalizarMeta).filter(m => m.titulo);
+      }
+      if (datos.pomodoro && typeof datos.pomodoro === 'object') {
+        LS.set('pomodoro', datos.pomodoro);
+        state.pomodoro = cargarPomodoro();
+        state.pomodoro.running = false;
+        state.pomodoro.endAt = null;
+        if (!Number.isFinite(state.pomodoro.remaining)) state.pomodoro.remaining = duracionModo(state.pomodoro.mode);
+      }
+      if (datos.cronometro && typeof datos.cronometro === 'object') {
+        LS.set('cronometro', {
+          base: Math.max(0, Number(datos.cronometro.base) || 0),
+          startedAt: null,
+          laps: Array.isArray(datos.cronometro.laps) ? datos.cronometro.laps : []
+        });
+        state.cronometro = cargarCronometro();
+        state.cronometro.startedAt = null;
+      }
+      if (datos.prefs && typeof datos.prefs === 'object') {
+        state.prefs = Object.assign({}, cargarPrefs(), {
+          contraste: Boolean(datos.prefs.contraste),
+          sonido: datos.prefs.sonido === undefined ? true : Boolean(datos.prefs.sonido),
+          streak: Math.max(0, parseInt(datos.prefs.streak, 10) || 0),
+          bestStreak: Math.max(0, parseInt(datos.prefs.bestStreak, 10) || 0),
+          lastVisit: hoyISO(),
+          lastBackup: typeof datos.prefs.lastBackup === 'string' ? datos.prefs.lastBackup : new Date().toISOString()
+        });
+      }
+      if (Array.isArray(datos.galeria)) {
+        LS.set('galeria', datos.galeria);
+        state.galeria = cargarGaleria();
+      }
+      if (typeof datos.retrato === 'string' && (datos.retrato.indexOf('data:image/') === 0 || /^img\//.test(datos.retrato))) {
+        LS.set('retrato', datos.retrato);
+        state.retrato = datos.retrato;
+      } else if (datos.retrato === null) {
+        LS.del('retrato');
+        state.retrato = null;
+      }
+      persistirTodo();
+      toast('Respaldo importado. Recargando el sistema…', 'ok');
+      setTimeout(() => location.reload(), 800);
+    } catch (e) {
+      toast('No se pudo aplicar el respaldo.', 'err');
+    }
+  };
+  lector.readAsText(archivo);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   17 · EVENTOS GLOBALES
+   ════════════════════════════════════════════════════════════════ */
+function registrarEventos() {
+  // Delegación de clics
+  document.addEventListener('click', evento => {
+    const objetivo = evento.target.closest('[data-action]');
+    if (!objetivo) return;
+    const accion = objetivo.dataset.action;
+
+    switch (accion) {
+      // Navegación
+      case 'nav':
+        irA(objetivo.dataset.view || objetivo.dataset.nav);
+        break;
+
+      // Sistema
+      case 'contraste': alternarContraste(); break;
+      case 'exportar': exportarTodo(); break;
+      case 'importar': pedirImportacion(); break;
+      case 'copiar-respaldo': copiarRespaldo(); break;
+
+      // Inspiración y galería
+      case 'retrato-subir': { const input = $('#inputRetrato'); if (input) { input.value = ''; input.click(); } break; }
+      case 'retrato-reset': quitarRetrato(); break;
+      case 'galeria-subir': { const input = $('#inputGaleria'); if (input) { input.value = ''; input.click(); } break; }
+      case 'galeria-filtro': galeriaFiltro = objetivo.dataset.cat || 'Todas'; renderInspiracion(); break;
+      case 'galeria-ver': if (objetivo.dataset.id) abrirLightbox(objetivo.dataset.id); break;
+      case 'galeria-retrato': if (objetivo.dataset.id) usarDesdeGaleria(objetivo.dataset.id); break;
+      case 'galeria-eliminar': if (objetivo.dataset.id) eliminarFotoGaleria(objetivo.dataset.id); break;
+      case 'galeria-cerrar': cerrarLightbox(); break;
+      case 'lightbox-retrato': if (fotoLightboxId) { const foto = fotoPorId(fotoLightboxId); cerrarLightbox(); if (foto) usarComoRetrato(foto.src); } break;
+      case 'lightbox-eliminar': quitarFotoDesdeLightbox(); break;
+
+      // Pomodoro
+      case 'pomo-modo': cambiarModoPomodoro(objetivo.dataset.modo); break;
+      case 'pomo-toggle': alternarPomodoro(); break;
+      case 'pomo-reset': reiniciarPomodoro(); break;
+      case 'probar-sonido': probarSonido(); break;
+
+      // Cronómetro
+      case 'crono-toggle': alternarCrono(); break;
+      case 'crono-vuelta': registrarVuelta(); break;
+      case 'crono-reset': reiniciarCrono(); break;
+      case 'exportar-vueltas': exportarVueltas(); break;
+
+      // Notas
+      case 'nota-nueva': abrirNota(null); break;
+      case 'nota-cerrar': cerrarNota(); break;
+      case 'nota-eliminar-abierta': eliminarNotaAbierta(); break;
+      case 'note-open': if (objetivo.dataset.id) abrirNota(objetivo.dataset.id); break;
+      case 'note-delete': if (objetivo.dataset.id) eliminarNota(objetivo.dataset.id); break;
+
+      // Metas
+      case 'meta-nueva': abrirModalMeta(null); break;
+      case 'meta-cerrar': cerrarModalMeta(); break;
+      case 'meta-guardar': guardarMeta(); break;
+      case 'meta-filtro': cambiarFiltroMeta(objetivo.dataset.filtro); break;
+      case 'meta-editar': abrirModalMeta(objetivo.dataset.id); break;
+      case 'meta-completar': alternarMetaCompletada(objetivo.dataset.id); break;
+      case 'meta-eliminar': eliminarMeta(objetivo.dataset.id); break;
+      case 'hito-agregar': agregarHitoDraft(); break;
+      case 'hito-draft-eliminar':
+        hitosDraft = hitosDraft.filter(h => h.id !== objetivo.dataset.id);
+        renderHitosDraft();
+        break;
+
+      // Confirmación
+      case 'confirm-si': resolverConfirmacion(true); break;
+      case 'confirm-no': resolverConfirmacion(false); break;
+      default: break;
+    }
+  });
+
+  // Cambios en checkboxes de hitos
+  document.addEventListener('change', evento => {
+    const check = evento.target.closest('input[data-action="hito-toggle"]');
+    if (check) {
+      alternarHito(check.dataset.meta, check.dataset.hito, check.checked);
+    }
+  });
+
+  // Notas: autoguardado
+  const titulo = $('#notaTitulo');
+  const contenido = $('#notaContenido');
+  const etiqueta = $('#notaEtiqueta');
+  if (titulo) titulo.addEventListener('input', alEscribirNota);
+  if (contenido) contenido.addEventListener('input', alEscribirNota);
+  if (etiqueta) etiqueta.addEventListener('change', alEscribirNota);
+
+  const buscador = $('#buscarNotas');
+  if (buscador) {
+    buscador.addEventListener('input', () => {
+      notaBusqueda = buscador.value;
+      renderNotas();
+    });
+  }
+
+  // Configuración del pomodoro
+  ['pomoWork', 'pomoShort', 'pomoLong'].forEach(id => {
+    const campo = $('#' + id);
+    if (campo) campo.addEventListener('change', actualizarConfigPomodoro);
+  });
+
+  const switchSonido = $('#switchSonido');
+  if (switchSonido) {
+    switchSonido.addEventListener('change', () => {
+      state.prefs.sonido = switchSonido.checked;
+      guardarPrefs();
+      if (switchSonido.checked) asegurarAudio();
+      toast(switchSonido.checked ? 'Audio del núcleo activado.' : 'Audio silenciado.');
+    });
+  }
+
+  // Hitos en el modal de metas
+  const hitoInput = $('#hitoInput');
+  if (hitoInput) {
+    hitoInput.addEventListener('keydown', evento => {
+      if (evento.key === 'Enter') {
+        evento.preventDefault();
+        agregarHitoDraft();
+      }
+    });
+  }
+
+  // Importación de archivo
+  const inputImport = $('#inputImport');
+  if (inputImport) {
+    inputImport.addEventListener('change', () => {
+      const archivo = inputImport.files && inputImport.files[0];
+      manejarImportacion(archivo);
+      inputImport.value = '';
+    });
+  }
+
+  // Retrato y galería local
+  const inputRetrato = $('#inputRetrato');
+  if (inputRetrato) {
+    inputRetrato.addEventListener('change', () => {
+      const archivo = inputRetrato.files && inputRetrato.files[0];
+      subirRetrato(archivo);
+      inputRetrato.value = '';
+    });
+  }
+  const inputGaleria = $('#inputGaleria');
+  if (inputGaleria) {
+    inputGaleria.addEventListener('change', () => {
+      const archivo = inputGaleria.files && inputGaleria.files[0];
+      subirFotoGaleria(archivo);
+      inputGaleria.value = '';
+    });
+  }
+  const selectCategoria = $('#galeriaCategoria');
+  if (selectCategoria) {
+    selectCategoria.addEventListener('change', () => {
+      galeriaCategoria = CATEGORIAS_GALERIA.includes(selectCategoria.value) ? selectCategoria.value : 'Inspiración';
+    });
+  }
+
+  // Cerrar modales al pulsar el fondo
+  $$('.modal').forEach(modal => {
+    modal.addEventListener('click', evento => {
+      if (evento.target !== modal) return;
+      if (modal.id === 'modalNota') cerrarNota();
+      else if (modal.id === 'modalMeta') cerrarModalMeta();
+      else if (modal.id === 'modalConfirm') resolverConfirmacion(false);
+      else if (modal.id === 'modalImagen') cerrarLightbox();
+    });
+  });
+
+  // Teclado: Escape y accesibilidad de tarjetas
+  document.addEventListener('keydown', evento => {
+    if (evento.key === 'Escape') {
+      const abiertos = $$('.modal.open');
+      if (abiertos.length) {
+        const ultimo = abiertos[abiertos.length - 1];
+        if (ultimo.id === 'modalConfirm') resolverConfirmacion(false);
+        else if (ultimo.id === 'modalNota') cerrarNota();
+        else if (ultimo.id === 'modalMeta') cerrarModalMeta();
+        else if (ultimo.id === 'modalImagen') cerrarLightbox();
+        else cerrarModal(ultimo);
+      }
+      return;
+    }
+    if ((evento.key === 'Enter' || evento.key === ' ') && !evento.target.closest('button, input, textarea, select, a')) {
+      const tarjeta = evento.target.closest('.nota-card');
+      if (tarjeta && tarjeta.dataset.id) {
+        evento.preventDefault();
+        abrirNota(tarjeta.dataset.id);
+      }
+    }
+  });
+
+  // Navegación por hash (atrás/adelante del navegador)
+  window.addEventListener('hashchange', () => irA(vistaDesdeHash()));
+}
+
+/* ════════════════════════════════════════════════════════════════
+   18 · ARRANQUE
+   ════════════════════════════════════════════════════════════════ */
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', iniciar);
+} else {
+  iniciar();
+}
+
+</script>
+
+<!-- ════════════════════════════════════════════════════════════════
+     ARIFURETA HUD — LISTO PARA GITHUB PAGES
+
+     CÓMO PUBLICARLO
+     1. Crea un repositorio en GitHub (puede ser público o privado con Pages).
+     2. Sube este archivo con el nombre exacto: index.html
+        (opcional: añade un README.md y una captura).
+     3. Ve a Settings → Pages → Build and deployment.
+     4. En "Source" elige "Deploy from a branch".
+     5. Selecciona la rama "main" y la carpeta "/ (root)". Guarda.
+     6. Espera uno o dos minutos. Tu app estará en:
+        https://TU-USUARIO.github.io/TU-REPOSITORIO/
+
+     CÓMO CAMBIAR LAS IMÁGENES
+     - Las imágenes viven en la carpeta img/ y deben subirse junto a index.html.
+       Si falta una, la interfaz usa sus degradados y la silueta SVG interna.
+     - Abre este archivo con un editor de texto y busca: const IMAGENES = {
+       (está al inicio del bloque JavaScript, sección 0).
+     - fondo: imagen oscura del dashboard.
+     - hajime: retrato por defecto (img/hajime.webp).
+     - ironman: fondo del reactor de arco (img/arc-reactor.png).
+     - nelson, nelsonBanner, darkModeEs, darkModeEn: material de inspiración.
+     - pomodoro, cronometro, notas, metas, inspiracion: banners de cada sección.
+     - También puedes cambiar el retrato y añadir fotos desde la vista Inspiración.
+       Esas imágenes se comprimen y se guardan en localStorage solo en ese dispositivo.
+     - Usa URLs directas (terminan en .jpg, .png, .webp) o rutas locales como
+       "img/mi-foto.jpg" si subes tus propias imágenes al repositorio.
+
+     NOVEDADES DE ESTA VERSIÓN
+     - Retrato real de Hajime Nagumo con opción de subir tu propia foto.
+     - Vista "Inspiración": Nelson Quest, Dark Mode (PDF ES/EN), Iron Man y galería.
+     - Galería con filtros, visor ampliado y opción "usar como retrato".
+     - Protocolo de respaldo rediseñado: memoria usada, último respaldo,
+       exportar JSON, importar y copiar al portapapeles.
+     - El respaldo incluye notas, metas, sesiones, retrato y galería.
+
+     NOTAS
+     - Todos los datos se guardan en localStorage con el prefijo "arifureta_".
+       Claves nuevas: arifureta_retrato y arifureta_galeria.
+     - Las fotos ocupan espacio. Si el navegador avisa que está lleno, elimina
+       alguna foto o exporta el respaldo y limpia el sitio.
+     - Usa "Exportar JSON" antes de limpiar el navegador o cambiar de equipo.
+     - No requiere servidor ni base de datos: es HTML, CSS y JS en un solo archivo.
+     ════════════════════════════════════════════════════════════════ -->
+</body>
+</html>
